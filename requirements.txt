@@ -1,0 +1,6 @@
+# NIATReviews backend — minimal install
+Django>=4.2,<6
+djangorestframework>=3.14
+django-cors-headers>=4.3
+djangorestframework-simplejwt>=5.3
+pillow>=10.0

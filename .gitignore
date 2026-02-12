@@ -1,0 +1,100 @@
+# Django Backend .gitignore
+
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ===========================
+# Virtual Environments
+# ===========================
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# ===========================
+# Django
+# ===========================
+*.sqlite3
+db.sqlite3
+*.db
+
+# Media files (uploaded by users)
+media/
+!media/.gitkeep
+
+# Static files (collected)
+staticfiles/
+static_root/
+!static/.gitkeep
+
+# Django migrations (optional - uncomment if you don't want to commit migrations)
+# **/migrations/*.py
+# !**/migrations/__init__.py
+
+# ===========================
+# Environment Variables
+# ===========================
+.env
+.env.*
+!.env.example
+
+# ===========================
+# IDE / Editor
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+
+# ===========================
+# Testing
+# ===========================
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ===========================
+# Celery
+# ===========================
+celerybeat-schedule
+celerybeat.pid
+
+# ===========================
+# Database Backups
+# ===========================
+*.dump
+*.sql
+*.backup
+
+# ===========================
+# Misc
+# ===========================
+*.mo
+*.pot
+local_settings.py
