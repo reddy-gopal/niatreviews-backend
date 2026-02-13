@@ -1,15 +1,9 @@
 """
 Full-text search utilities for community posts using PostgreSQL FTS.
 Provides scalable search with ranking, filtering, and caching support.
+SQLite-safe: postgres imports are lazy so suggestions/trending work without PostgreSQL.
 """
-from django.contrib.postgres.search import (
-    SearchVector,
-    SearchQuery,
-    SearchRank,
-    TrigramSimilarity,
-)
-from django.db.models import Q, F, Value, CharField
-from django.db.models.functions import Coalesce
+from django.db.models import Q
 from .models import Post, Tag, Category
 
 
@@ -37,6 +31,8 @@ def search_posts(
     """
     if not query_string or not query_string.strip():
         return Post.objects.none()
+    
+    from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
     
     # Create search vector from title (weight A) and description (weight B)
     search_vector = SearchVector("title", weight="A") + SearchVector(
@@ -104,12 +100,12 @@ def search_posts_simple(query_string):
     )
 
 
-def get_search_suggestions(query_string, limit=5):
+def get_search_suggestions(query_string, limit=7):
     """
     Get search suggestions based on partial query.
-    Returns matching tags, categories, and posts.
+    Returns matching tags, categories, and posts. Single character match allowed.
     """
-    if not query_string or len(query_string) < 2:
+    if not query_string or not query_string.strip():
         return {"tags": [], "categories": [], "posts": []}
     
     tags = list(

@@ -3,7 +3,7 @@ Admin interface for verification models.
 """
 from django.contrib import admin
 from django.utils import timezone
-from .models import SeniorProfile, PhoneVerification, SeniorRegistration
+from .models import SeniorProfile, PhoneVerification, SeniorRegistration, MagicLoginToken
 
 
 @admin.register(SeniorProfile)
@@ -34,7 +34,7 @@ class SeniorProfileAdmin(admin.ModelAdmin):
             "fields": ("user", "proof_summary")
         }),
         ("Review Status", {
-            "fields": ("status", "reviewed_by", "reviewed_at", "admin_notes")
+            "fields": ("status", "reviewed_by", "reviewed_at", "admin_notes", "review_submitted", "onboarding_completed")
         }),
         ("Metadata", {
             "fields": ("id", "created_at", "updated_at"),
@@ -296,3 +296,12 @@ Skills: {registration.skills_gained}
             f"Successfully rejected {count} registration(s). Rejection emails sent."
         )
     reject_registrations.short_description = "Reject selected registrations"
+
+
+@admin.register(MagicLoginToken)
+class MagicLoginTokenAdmin(admin.ModelAdmin):
+    list_display = ("user", "token", "expires_at", "is_used", "created_at")
+    list_filter = ("is_used", "created_at")
+    search_fields = ("user__username", "user__email")
+    raw_id_fields = ("user",)
+    readonly_fields = ("id", "token", "created_at")

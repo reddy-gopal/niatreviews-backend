@@ -1,10 +1,18 @@
 """
-NIATReviews.com — Reviews app (scaffold for future).
-Programs, partner colleges, and reviews. Expand when moving beyond community-only.
+NIATReviews.com — Reviews app.
+Programs, partner colleges, reviews. Senior onboarding review (mandatory on main app).
 """
 import uuid
 from django.conf import settings
 from django.db import models
+
+from .onboarding_constants import (
+    FACULTY_SUPPORT_CHOICES,
+    LEARNING_BALANCE_CHOICES,
+    PLACEMENT_REALITY_CHOICES,
+    EXPERIENCE_FEEL_CHOICES,
+    FINAL_RECOMMENDATION_CHOICES,
+)
 
 
 class Program(models.Model):
@@ -88,3 +96,56 @@ class Review(models.Model):
 
     def __str__(self):
         return f"Review({self.author_id}, {self.program_id}, {self.partner_college_id})"
+
+
+class SeniorOnboardingReview(models.Model):
+    """
+    Mandatory onboarding review for approved seniors (one per user).
+    Submitted on main app (niatreviews.com) after first magic-login.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="senior_onboarding_review",
+        unique=True,
+        db_index=True,
+    )
+
+    teaching_quality = models.PositiveSmallIntegerField()
+    faculty_support_text = models.TextField()
+    faculty_support_choice = models.CharField(max_length=32, choices=FACULTY_SUPPORT_CHOICES)
+
+    projects_quality = models.PositiveSmallIntegerField()
+    best_project_or_skill = models.TextField()
+    learning_balance_choice = models.CharField(max_length=32, choices=LEARNING_BALANCE_CHOICES)
+
+    placement_support = models.PositiveSmallIntegerField()
+    job_ready_text = models.TextField()
+    placement_reality_choice = models.CharField(max_length=32, choices=PLACEMENT_REALITY_CHOICES)
+
+    overall_satisfaction = models.PositiveSmallIntegerField()
+    one_line_experience = models.TextField()
+    experience_feel_choice = models.CharField(max_length=32, choices=EXPERIENCE_FEEL_CHOICES)
+
+    recommendation_score = models.PositiveSmallIntegerField()
+    who_should_join_text = models.TextField()
+    final_recommendation_choice = models.CharField(max_length=32, choices=FINAL_RECOMMENDATION_CHOICES)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "reviews_senior_onboarding_review"
+        verbose_name = "Senior onboarding review"
+        verbose_name_plural = "Senior onboarding reviews"
+        constraints = [
+            models.CheckConstraint(check=models.Q(teaching_quality__gte=1, teaching_quality__lte=5), name="onb_teaching_1_5"),
+            models.CheckConstraint(check=models.Q(projects_quality__gte=1, projects_quality__lte=5), name="onb_projects_1_5"),
+            models.CheckConstraint(check=models.Q(placement_support__gte=1, placement_support__lte=5), name="onb_placement_1_5"),
+            models.CheckConstraint(check=models.Q(overall_satisfaction__gte=1, overall_satisfaction__lte=5), name="onb_overall_1_5"),
+            models.CheckConstraint(check=models.Q(recommendation_score__gte=1, recommendation_score__lte=5), name="onb_recommend_1_5"),
+        ]
+
+    def __str__(self):
+        return f"Onboarding review by {self.user_id}"

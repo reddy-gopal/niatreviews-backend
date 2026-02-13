@@ -81,6 +81,7 @@ def search_posts_view(request):
             serializer = PostSerializer(page, many=True, context={"request": request})
             response_data = paginator.get_paginated_response(serializer.data).data
             response_data["query"] = query_string
+            response_data["count"] = len(cached_result)
             response_data["cached"] = True
             return Response(response_data)
     
@@ -106,6 +107,9 @@ def search_posts_view(request):
     if not request.user.is_authenticated:
         cache.set(cache_key, list(posts), 300)  # 5 minutes
     
+    # Total count for search result set (before pagination)
+    total_count = posts.count()
+
     # Paginate results
     paginator = PostCursorPagination()
     page = paginator.paginate_queryset(posts, request)
@@ -114,6 +118,7 @@ def search_posts_view(request):
         serializer = PostSerializer(page, many=True, context={"request": request})
         response_data = paginator.get_paginated_response(serializer.data).data
         response_data["query"] = query_string
+        response_data["count"] = total_count
         response_data["filters"] = {
             "category": category_slug,
             "tag": tag_slug,
@@ -141,8 +146,8 @@ def search_suggestions_view(request):
     Get search suggestions for autocomplete.
     
     Query params:
-        q: Partial search query (min 2 chars)
-        limit: Max suggestions (default: 5)
+        q: Partial search query (min 1 char)
+        limit: Max suggestions per type (default: 7, max: 10)
     
     Returns:
         {
@@ -152,9 +157,9 @@ def search_suggestions_view(request):
         }
     """
     query_string = request.query_params.get("q", "").strip()
-    limit = int(request.query_params.get("limit", 5))
+    limit = min(int(request.query_params.get("limit", 7)), 10)
     
-    if len(query_string) < 2:
+    if not query_string:
         return Response({"tags": [], "categories": [], "posts": []})
     
     # Build cache key

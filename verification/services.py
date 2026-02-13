@@ -1,8 +1,23 @@
 """
 Email services for verification workflow.
 """
+from datetime import timedelta
+
 from django.core.mail import send_mail
 from django.conf import settings
+from django.utils import timezone
+
+from .models import MagicLoginToken
+
+
+def create_magic_login_token(user, expiry_minutes=30):
+    """
+    Create a single-use magic login token for the user.
+    Returns the token UUID (use for building link: /auth/magic?token=<uuid>).
+    """
+    expires_at = timezone.now() + timedelta(minutes=expiry_minutes)
+    ml = MagicLoginToken.objects.create(user=user, expires_at=expires_at)
+    return str(ml.token)
 
 
 def send_senior_received_email(user):
@@ -44,9 +59,11 @@ Need help? Reply to this email or contact us at support@niatreviews.com
 def send_senior_approved_email(user):
     """
     Sent when admin approves the senior profile.
-    Congratulates and provides next steps.
+    Congratulates and provides next steps. Includes magic login link (30 min).
     """
     subject = "You're Approved 🎉 Welcome to NIATReviews!"
+    magic_token = create_magic_login_token(user)
+    login_url = f"https://niatreviews.com/auth/magic?token={magic_token}"
 
     message = f"""Hi {user.first_name or user.username},
 
@@ -60,8 +77,8 @@ What you can do now:
 • Help guide the next generation of NIAT students
 • Build your reputation as a trusted mentor
 
-Get started now:
-👉 Login here: https://niatreviews.com/login
+Get started now (this link expires in 30 minutes):
+👉 Click to log in: {login_url}
 
 Your verified senior badge will be visible on all your posts and comments, helping students identify authentic advice from real NIAT seniors.
 

@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
 from .models import Category, Tag, Post, Comment, PostVote, CommentUpvote
+from .permissions import IsAuthorOrReadOnly, SeniorMustCompleteOnboarding
 from .pagination import PostCursorPagination, CommentCursorPagination
 from .serializers import (
     CategorySerializer,
@@ -22,14 +23,14 @@ class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by("name")
     serializer_class = CategorySerializer
     pagination_class = None  # list is small; default CursorPagination uses "created", model has "created_at"
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, SeniorMustCompleteOnboarding]
 
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all().order_by("name")
     serializer_class = TagSerializer
     pagination_class = None
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly, SeniorMustCompleteOnboarding]
 
 
 class PostViewSet(viewsets.ModelViewSet):
@@ -42,6 +43,7 @@ class PostViewSet(viewsets.ModelViewSet):
     pagination_class = PostCursorPagination
     lookup_field = "slug"
     lookup_url_kwarg = "slug"
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly, SeniorMustCompleteOnboarding]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -161,6 +163,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     )
     serializer_class = CommentSerializer
     pagination_class = CommentCursorPagination
+    permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly, SeniorMustCompleteOnboarding]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -227,6 +230,7 @@ class CommentUpvoteViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CommentUpvoteSerializer
     queryset = CommentUpvote.objects.select_related("comment", "user").order_by("-created_at")
+    permission_classes = [IsAuthenticatedOrReadOnly, SeniorMustCompleteOnboarding]
 
     def get_serializer_context(self):
         context = super().get_serializer_context()

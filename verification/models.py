@@ -109,6 +109,18 @@ class SeniorProfile(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     admin_notes = models.TextField(blank=True)
 
+    # Senior onboarding (mandatory on main app after first login)
+    review_submitted = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True when mandatory onboarding review has been submitted.",
+    )
+    onboarding_completed = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True after senior completes onboarding review.",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -209,3 +221,38 @@ class SeniorRegistration(models.Model):
     
     def __str__(self):
         return f"{self.full_name} ({self.college_email}) - {self.status}"
+
+
+class MagicLoginToken(models.Model):
+    """
+    Passwordless magic link login for approved seniors.
+    Single-use, expires in 30 minutes.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="magic_login_tokens",
+        db_index=True,
+    )
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
+    expires_at = models.DateTimeField(db_index=True)
+    is_used = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "verification_magic_login_token"
+        indexes = [models.Index(fields=["token", "is_used", "expires_at"])]
+        verbose_name = "Magic login token"
+        verbose_name_plural = "Magic login tokens"
+
+    def __str__(self):
+        return f"MagicLogin({self.user_id}, used={self.is_used})"
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_used and not self.is_expired

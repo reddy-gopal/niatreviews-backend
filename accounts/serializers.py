@@ -17,3 +17,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "username", "email", "role", "is_verified_senior", "phone_number", "phone_verified"]
         read_only_fields = ["id", "username", "role", "is_verified_senior", "phone_verified"]
+
+
+class PublicProfileSerializer(serializers.ModelSerializer):
+    """Public profile for GET /api/users/<username>/ (no email/phone)."""
+    class Meta:
+        model = User
+        fields = ["id", "username", "role", "is_verified_senior"]
+        read_only_fields = fields

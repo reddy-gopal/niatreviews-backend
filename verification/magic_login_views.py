@@ -1,0 +1,64 @@
+"""Magic login (passwordless) for approved seniors."""
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import MagicLoginToken
+
+
+class MagicLoginView(APIView):
+    """
+    GET /api/auth/magic-login/?token=<uuid>
+    Validates token, ensures senior is approved, returns JWT + redirect path.
+    Frontend stores tokens and redirects.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        token_value = request.query_params.get("token")
+        if not token_value:
+            return Response(
+                {"detail": "Token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            ml = MagicLoginToken.objects.get(token=token_value)
+        except MagicLoginToken.DoesNotExist:
+            return Response(
+                {"detail": "Invalid or expired link."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if ml.is_used:
+            return Response(
+                {"detail": "This link has already been used."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if ml.is_expired:
+            return Response(
+                {"detail": "This link has expired."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = ml.user
+        if not hasattr(user, "senior_profile"):
+            return Response(
+                {"detail": "Invalid account."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if user.senior_profile.status != "approved":
+            return Response(
+                {"detail": "Your senior account is not yet approved."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        ml.is_used = True
+        ml.save(update_fields=["is_used"])
+        refresh = RefreshToken.for_user(user)
+        redirect = "/onboarding/review" if not user.senior_profile.review_submitted else "/community"
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "redirect": redirect,
+        })

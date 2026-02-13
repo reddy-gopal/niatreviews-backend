@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 
-from .serializers import ProfileSerializer
+from .serializers import ProfileSerializer, PublicProfileSerializer
 
 User = get_user_model()
 
@@ -51,4 +51,16 @@ class MeView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
+        return Response(serializer.data)
+
+
+class UserProfileByUsernameView(APIView):
+    """GET: public profile by username for /api/users/<username>/."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, username):
+        user = User.objects.filter(username=username).first()
+        if not user:
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = PublicProfileSerializer(user)
         return Response(serializer.data)

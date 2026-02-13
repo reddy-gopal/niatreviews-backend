@@ -19,6 +19,8 @@ class SeniorProfileSerializer(serializers.ModelSerializer):
             "reviewed_by",
             "reviewed_at",
             "admin_notes",
+            "review_submitted",
+            "onboarding_completed",
             "created_at",
             "updated_at",
         ]
@@ -27,6 +29,8 @@ class SeniorProfileSerializer(serializers.ModelSerializer):
             "status",
             "reviewed_by",
             "reviewed_at",
+            "review_submitted",
+            "onboarding_completed",
             "created_at",
             "updated_at",
         ]

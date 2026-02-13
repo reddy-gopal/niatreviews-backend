@@ -19,7 +19,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from accounts.views import RegisterView, MeView
+from accounts.views import RegisterView, MeView, UserProfileByUsernameView
+from verification.magic_login_views import MagicLoginView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -27,9 +28,12 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/register/", RegisterView.as_view(), name="register"),
     path("api/auth/me/", MeView.as_view(), name="me"),
+    path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
+    path("api/users/<str:username>/", UserProfileByUsernameView.as_view(), name="user-profile-by-username"),
     path("api/", include("community.urls")),
     path("api/", include("notifications.urls")),
     path("api/verification/", include("verification.urls")),
+    path("api/senior/", include("reviews.onboarding_urls")),
 ]
 
 if settings.DEBUG:
