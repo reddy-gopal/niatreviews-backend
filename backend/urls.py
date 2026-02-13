@@ -29,6 +29,7 @@ urlpatterns = [
     path("api/auth/me/", MeView.as_view(), name="me"),
     path("api/", include("community.urls")),
     path("api/", include("notifications.urls")),
+    path("api/verification/", include("verification.urls")),
 ]
 
 if settings.DEBUG:

@@ -121,3 +121,91 @@ class SeniorProfile(models.Model):
         verbose_name = "Senior profile"
         verbose_name_plural = "Senior profiles"
 
+
+
+class SeniorRegistration(models.Model):
+    """
+    Detailed senior registration from the seniors-frontend form.
+    Stores comprehensive application data before admin approval.
+    After approval, admin can create a User account and SeniorProfile.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Basic Info
+    full_name = models.CharField(max_length=255, help_text="Full legal name")
+    call_name = models.CharField(max_length=100, help_text="Preferred name or nickname")
+    college_email = models.EmailField(db_index=True, help_text="College email address")
+    personal_email = models.EmailField(help_text="Personal email for notifications")
+    phone = models.CharField(max_length=20, help_text="Phone number")
+    
+    # Academic Info
+    partner_college = models.CharField(max_length=100, help_text="Partner college name")
+    graduation_year = models.CharField(max_length=4, help_text="Expected graduation year")
+    branch = models.CharField(max_length=100, help_text="Branch/Department")
+    student_id = models.CharField(max_length=50, help_text="Student ID number")
+    current_status = models.CharField(max_length=50, help_text="Current status (Student/Intern)")
+    
+    # Verification
+    id_card_image = models.ImageField(
+        upload_to="senior_registrations/id_cards/",
+        help_text="College ID card image"
+    )
+    
+    # Engaging Questions
+    why_join = models.TextField(help_text="Why they want to join as a mentor")
+    best_experience = models.TextField(help_text="Best experience at NIAT")
+    advice_to_juniors = models.TextField(help_text="Advice for junior students")
+    skills_gained = models.TextField(help_text="Key skills gained")
+    
+    # Verification Status
+    college_email_verified = models.BooleanField(default=False)
+    phone_verified = models.BooleanField(default=False)
+    
+    # Admin Review
+    STATUS_CHOICES = [
+        ("pending", "Pending Review"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="pending",
+        db_index=True
+    )
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="senior_registrations_reviewed"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    admin_notes = models.TextField(blank=True)
+    
+    # Linked User (created after approval)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="senior_registration",
+        help_text="User account created/linked after approval"
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = "verification_senior_registration"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["college_email"]),
+        ]
+        verbose_name = "Senior Registration"
+        verbose_name_plural = "Senior Registrations"
+    
+    def __str__(self):
+        return f"{self.full_name} ({self.college_email}) - {self.status}"
