@@ -31,4 +31,6 @@ def set_question_answered(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=Answer)
 def set_question_unanswered(sender, instance, **kwargs):
-    Question.objects.filter(pk=instance.question_id).update(is_answered=False)
+    from .models import Answer as AnswerModel
+    if not AnswerModel.objects.filter(question_id=instance.question_id).exists():
+        Question.objects.filter(pk=instance.question_id).update(is_answered=False)

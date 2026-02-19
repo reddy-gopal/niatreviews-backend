@@ -55,6 +55,7 @@ class SeniorDashboardView(APIView):
         ).data
         for i, fu in enumerate(recent_followups):
             followups_data[i]["question_slug"] = fu.question.slug
+            followups_data[i]["question_title"] = fu.question.title
 
         answer_upvotes_total = (
             Answer.objects.filter(author=user).aggregate(Sum("upvote_count"))["upvote_count__sum"] or 0

@@ -1,6 +1,6 @@
 """
 NIAT Q&A app.
-Prospective students ask questions; verified seniors give one accepted answer per question.
+Prospective students ask questions; verified seniors can each give one answer per question (multiple answers per question).
 Anyone can upvote/downvote questions and answers.
 """
 import re
@@ -157,10 +157,10 @@ class Question(models.Model):
 
 class Answer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    question = models.OneToOneField(
+    question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
-        related_name="answer",
+        related_name="answers",
         db_index=True,
     )
     author = models.ForeignKey(
@@ -178,6 +178,12 @@ class Answer(models.Model):
     class Meta:
         db_table = "qa_answer"
         ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["question", "author"],
+                name="qa_answer_one_per_senior_per_question",
+            ),
+        ]
 
     def __str__(self):
         return self.body[:50] or str(self.id)

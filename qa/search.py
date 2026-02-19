@@ -1,7 +1,14 @@
 """Full-text search for questions (PostgreSQL FTS / SQLite FTS5 / icontains fallback)."""
 from django.db import connection
-from django.db.models import Q
-from .models import Question
+from django.db.models import Prefetch, Q
+from .models import Answer, Question
+
+
+def _answers_prefetch():
+    return Prefetch(
+        "answers",
+        queryset=Answer.objects.order_by("created_at").select_related("author"),
+    )
 
 
 def search_questions(query_string, order_by="-created_at"):
@@ -17,7 +24,8 @@ def search_questions(query_string, order_by="-created_at"):
             search_vector = SearchVector("title", weight="A") + SearchVector("body", weight="B")
             search_query = SearchQuery(q, search_type="websearch")
             qs = (
-                Question.objects.select_related("author", "answer", "answer__author")
+                Question.objects.select_related("author")
+                .prefetch_related(_answers_prefetch())
                 .annotate(search_rank=SearchRank(search_vector, search_query))
                 .filter(search_rank__gt=0)
             )
@@ -37,7 +45,8 @@ def search_questions(query_string, order_by="-created_at"):
     if connection.vendor == "sqlite":
         qs = (
             Question.objects.search(q)
-            .select_related("author", "answer", "answer__author")
+            .select_related("author")
+            .prefetch_related(_answers_prefetch())
         )
         if order_by == "-upvote_count":
             qs = qs.order_by("-upvote_count", "-created_at")
@@ -47,7 +56,7 @@ def search_questions(query_string, order_by="-created_at"):
         if not qs.exists() and q:
             qs = Question.objects.filter(
                 Q(title__icontains=q) | Q(body__icontains=q)
-            ).select_related("author", "answer", "answer__author")
+            ).select_related("author").prefetch_related(_answers_prefetch())
             if order_by == "-upvote_count":
                 qs = qs.order_by("-upvote_count", "-created_at")
             else:
@@ -57,7 +66,7 @@ def search_questions(query_string, order_by="-created_at"):
     # Other DBs or fallback: icontains
     qs = Question.objects.filter(
         Q(title__icontains=q) | Q(body__icontains=q)
-    ).select_related("author", "answer", "answer__author")
+    ).select_related("author").prefetch_related(_answers_prefetch())
     if order_by == "-upvote_count":
         qs = qs.order_by("-upvote_count", "-created_at")
     else:
@@ -74,7 +83,8 @@ def suggestion_questions(query_string, limit=10):
     if connection.vendor == "sqlite":
         qs = (
             Question.objects.search(q)
-            .select_related("author", "answer", "answer__author")
+            .select_related("author")
+            .prefetch_related(_answers_prefetch())
             .order_by("-created_at")[:limit]
         )
         if not qs.exists() and q:
@@ -82,7 +92,8 @@ def suggestion_questions(query_string, limit=10):
                 Question.objects.filter(
                     Q(title__icontains=q) | Q(body__icontains=q)
                 )
-                .select_related("author", "answer", "answer__author")
+                .select_related("author")
+                .prefetch_related(_answers_prefetch())
                 .order_by("-created_at")[:limit]
             )
         return qs
@@ -90,6 +101,7 @@ def suggestion_questions(query_string, limit=10):
         Question.objects.filter(
             Q(title__icontains=q) | Q(body__icontains=q)
         )
-        .select_related("author", "answer", "answer__author")
+        .select_related("author")
+        .prefetch_related(_answers_prefetch())
         .order_by("-created_at")[:limit]
     )

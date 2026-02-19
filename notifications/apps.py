@@ -7,3 +7,6 @@ class NotificationsConfig(AppConfig):
     name = "notifications"
     verbose_name = "Notifications"
     label = "notifications"
+
+    def ready(self):
+        import notifications.signals  # noqa: F401 — register QA and community notification signals

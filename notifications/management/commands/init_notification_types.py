@@ -12,29 +12,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         notification_types = [
             {
-                "code": "post_upvote",
-                "name": "Post Upvote",
-                "description": "Someone upvoted your post",
+                "code": "qa_question_asked",
+                "name": "New question from student",
+                "description": "A prospective student asked a question you can answer",
             },
             {
-                "code": "post_downvote",
-                "name": "Post Downvote",
-                "description": "Someone downvoted your post",
-            },
-            {
-                "code": "post_comment",
-                "name": "Post Comment",
-                "description": "Someone commented on your post",
-            },
-            {
-                "code": "comment_upvote",
-                "name": "Comment Upvote",
-                "description": "Someone upvoted your comment",
-            },
-            {
-                "code": "comment_reply",
-                "name": "Comment Reply",
-                "description": "Someone replied to your comment",
+                "code": "qa_answer",
+                "name": "Your question was answered",
+                "description": "A verified senior answered your question",
             },
         ]
 

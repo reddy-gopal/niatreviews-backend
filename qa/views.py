@@ -1,6 +1,6 @@
 import logging
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import OuterRef, Subquery
+from django.db.models import Count, OuterRef, Prefetch, Subquery
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -53,18 +53,22 @@ def question_categories_view(request):
 VALUE_DOWN = -1
 
 
+def _answers_prefetch():
+    return Prefetch(
+        "answers",
+        queryset=Answer.objects.order_by("created_at").select_related("author"),
+    )
+
+
 class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.select_related(
-        "author", "answer", "answer__author"
-    ).order_by("-created_at")
+    queryset = Question.objects.select_related("author").order_by("-created_at")
     lookup_field = "slug"
     lookup_url_kwarg = "slug"
     pagination_class = QuestionCursorPagination
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def get_permissions(self):
-        # Answer/vote actions: only need to be authenticated; answer() enforces verified senior / answer author
-        if self.action in ("answer", "answer_upvote", "answer_downvote"):
+        if self.action in ("answers_list", "answer_detail", "answer_upvote", "answer_downvote"):
             return [IsAuthenticatedOrReadOnly()]
         return [IsAuthenticatedOrReadOnly(), IsAuthorOrReadOnly()]
 
@@ -77,6 +81,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = qs.prefetch_related(_answers_prefetch())
         if self.action == "retrieve":
             qs = qs.prefetch_related("followups", "followups__author")
         answered = self.request.query_params.get("answered")
@@ -89,7 +94,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
             qs = qs.filter(author_id=author)
         answer_author = self.request.query_params.get("answer_author")
         if answer_author:
-            qs = qs.filter(is_answered=True, answer__author_id=answer_author)
+            qs = qs.filter(is_answered=True, answers__author_id=answer_author).distinct()
+        if self.action == "list":
+            qs = qs.annotate(answer_count=Count("answers"))
         category = self.request.query_params.get("category")
         if category:
             qs = qs.filter(category=category)
@@ -102,6 +109,10 @@ class QuestionViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
+        if _user_is_verified_senior(self.request.user):
+            raise PermissionDenied(
+                "Only prospective students can ask questions. Verified seniors answer questions."
+            )
         serializer.save(author=self.request.user)
 
     def _ensure_can_edit_or_delete(self, question):
@@ -178,22 +189,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
             QuestionVote.objects.filter(question=question, user=request.user).delete()
         return Response(self._vote_response_question(question, request.user))
 
-    @action(detail=True, methods=["get", "post", "patch", "delete"], url_path="answer")
-    def answer(self, request, slug=None):
+    @action(detail=True, methods=["get", "post"], url_path="answers")
+    def answers_list(self, request, slug=None):
         question = self.get_object()
         if request.method == "GET":
-            try:
-                ans = question.answer
-                ser = AnswerSerializer(ans)
-                data = ser.data
+            answers = question.answers.order_by("created_at").select_related("author")
+            out = []
+            for ans in answers:
+                data = AnswerSerializer(ans).data
                 if request.user.is_authenticated:
                     v = ans.votes.filter(user=request.user).first()
                     data["user_vote"] = v.value if v else None
                 else:
                     data["user_vote"] = None
-                return Response(data)
-            except Answer.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                out.append(data)
+            return Response(out)
 
         if request.method == "POST":
             if not _user_is_verified_senior(request.user):
@@ -201,9 +211,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
                     {"detail": "Only verified NIAT seniors can answer questions."},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            if hasattr(question, "answer"):
+            if question.answers.filter(author=request.user).exists():
                 return Response(
-                    {"detail": "This question already has an answer."},
+                    {"detail": "You have already answered this question."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             body = request.data.get("body") or ""
@@ -219,18 +229,36 @@ class QuestionViewSet(viewsets.ModelViewSet):
             )
             return Response(AnswerSerializer(ans).data, status=status.HTTP_201_CREATED)
 
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def _get_answer_or_404(self, question, answer_id):
         try:
-            ans = question.answer
-        except Answer.DoesNotExist:
+            return question.answers.get(id=answer_id)
+        except (Answer.DoesNotExist, ValueError):
+            return None
+
+    @action(detail=True, methods=["get", "patch", "delete"], url_path="answers/(?P<answer_id>[^/.]+)")
+    def answer_detail(self, request, slug=None, answer_id=None):
+        question = self.get_object()
+        ans = self._get_answer_or_404(question, answer_id)
+        if not ans:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        if ans.author != request.user:
-            return Response(
-                {"detail": "You can only edit or delete your own answer."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if request.method == "GET":
+            data = AnswerSerializer(ans).data
+            if request.user.is_authenticated:
+                v = ans.votes.filter(user=request.user).first()
+                data["user_vote"] = v.value if v else None
+            else:
+                data["user_vote"] = None
+            return Response(data)
 
         if request.method == "PATCH":
+            if ans.author != request.user:
+                return Response(
+                    {"detail": "You can only edit your own answer."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             body = request.data.get("body")
             if body is not None:
                 ans.body = body.strip()
@@ -238,31 +266,35 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return Response(AnswerSerializer(ans).data)
 
         if request.method == "DELETE":
+            if ans.author != request.user:
+                return Response(
+                    {"detail": "You can only delete your own answer."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             ans.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-    @action(detail=True, methods=["post", "delete"], url_path="answer/upvote")
-    def answer_upvote(self, request, slug=None):
-        return self._answer_vote(request, slug, VALUE_UP, "upvote")
+    @action(detail=True, methods=["post", "delete"], url_path="answers/(?P<answer_id>[^/.]+)/upvote")
+    def answer_upvote(self, request, slug=None, answer_id=None):
+        return self._answer_vote(request, slug, answer_id, VALUE_UP)
 
-    @action(detail=True, methods=["post", "delete"], url_path="answer/downvote")
-    def answer_downvote(self, request, slug=None):
-        return self._answer_vote(request, slug, VALUE_DOWN, "downvote")
+    @action(detail=True, methods=["post", "delete"], url_path="answers/(?P<answer_id>[^/.]+)/downvote")
+    def answer_downvote(self, request, slug=None, answer_id=None):
+        return self._answer_vote(request, slug, answer_id, VALUE_DOWN)
 
-    def _answer_vote(self, request, slug, value, label):
+    def _answer_vote(self, request, slug, answer_id, value):
         if not request.user.is_authenticated:
             return Response(
                 {"detail": "Authentication required."},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
         question = self.get_object()
-        try:
-            ans = question.answer
-        except Answer.DoesNotExist:
+        ans = self._get_answer_or_404(question, answer_id)
+        if not ans:
             return Response(
-                {"detail": "No answer to vote on."},
+                {"detail": "Answer not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         if request.method == "POST":
@@ -288,7 +320,7 @@ class FAQListView(APIView):
         qs = (
             Question.objects.filter(is_faq=True)
             .select_related("author")
-            .prefetch_related("answer")
+            .prefetch_related(_answers_prefetch())
             .order_by("faq_order", "-created_at")
         )
         if request.user.is_authenticated:

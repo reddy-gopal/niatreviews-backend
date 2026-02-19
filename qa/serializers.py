@@ -34,9 +34,14 @@ class FollowUpSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         if not user.is_authenticated:
             return False
-        answer = getattr(obj.question, "answer", None)
-        answer_author_id = answer.author_id if answer else None
-        return user.id in [obj.author_id, answer_author_id] or getattr(user, "is_staff", False)
+        answer_author_ids = list(
+            obj.question.answers.values_list("author_id", flat=True)
+        )
+        return (
+            user.id == obj.author_id
+            or user.id in answer_author_ids
+            or getattr(user, "is_staff", False)
+        )
 
 
 class AnswerSerializer(serializers.ModelSerializer):
@@ -62,11 +67,22 @@ class AnswerSerializer(serializers.ModelSerializer):
         }
 
 
+def _answer_serializer_with_vote(answer, request):
+    data = AnswerSerializer(answer).data
+    if request and request.user.is_authenticated:
+        vote = answer.votes.filter(user=request.user).first()
+        data["user_vote"] = vote.value if vote else None
+    else:
+        data["user_vote"] = None
+    return data
+
+
 class QuestionListSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
     has_answer = serializers.SerializerMethodField()
     user_vote = serializers.SerializerMethodField()
     answer = serializers.SerializerMethodField()
+    answer_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Question
@@ -82,6 +98,7 @@ class QuestionListSerializer(serializers.ModelSerializer):
             "view_count",
             "created_at",
             "has_answer",
+            "answer_count",
             "user_vote",
             "answer",
         ]
@@ -93,28 +110,25 @@ class QuestionListSerializer(serializers.ModelSerializer):
         return obj.is_answered
 
     def get_user_vote(self, obj):
-        vote = getattr(obj, "user_vote", None)
-        return vote
+        return getattr(obj, "user_vote", None)
+
+    def get_answer_count(self, obj):
+        if not obj.is_answered:
+            return 0
+        return getattr(obj, "answer_count", None) or obj.answers.count()
 
     def get_answer(self, obj):
         if not obj.is_answered:
             return None
-        try:
-            a = obj.answer
-            data = AnswerSerializer(a).data
-            if self.context.get("request") and self.context["request"].user.is_authenticated:
-                vote = a.votes.filter(user=self.context["request"].user).first()
-                data["user_vote"] = vote.value if vote else None
-            else:
-                data["user_vote"] = None
-            return data
-        except Answer.DoesNotExist:
+        first = obj.answers.order_by("created_at").first()
+        if not first:
             return None
+        return _answer_serializer_with_vote(first, self.context.get("request"))
 
 
 class QuestionDetailSerializer(serializers.ModelSerializer):
     author = serializers.SerializerMethodField()
-    answer = serializers.SerializerMethodField()
+    answers = serializers.SerializerMethodField()
     user_vote = serializers.SerializerMethodField()
     followups = serializers.SerializerMethodField()
 
@@ -135,7 +149,7 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
             "faq_order",
             "created_at",
             "updated_at",
-            "answer",
+            "answers",
             "user_vote",
             "followups",
         ]
@@ -147,18 +161,10 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
     def get_author(self, obj):
         return {"username": obj.author.username, "id": str(obj.author.id)}
 
-    def get_answer(self, obj):
-        try:
-            a = obj.answer
-            data = AnswerSerializer(a).data
-            if self.context.get("request") and self.context["request"].user.is_authenticated:
-                vote = a.votes.filter(user=self.context["request"].user).first()
-                data["user_vote"] = vote.value if vote else None
-            else:
-                data["user_vote"] = None
-            return data
-        except Answer.DoesNotExist:
-            return None
+    def get_answers(self, obj):
+        answers = obj.answers.order_by("created_at")
+        request = self.context.get("request")
+        return [_answer_serializer_with_vote(a, request) for a in answers]
 
     def get_user_vote(self, obj):
         return getattr(obj, "user_vote", None)

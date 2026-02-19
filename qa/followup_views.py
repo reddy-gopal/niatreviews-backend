@@ -2,6 +2,7 @@
 Follow-up thread under answered questions. Only question author can create.
 Edit: follow-up author. Delete: follow-up author OR answer author OR staff.
 """
+from django.db.models import Prefetch
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
@@ -17,7 +18,12 @@ def error_response(code: str, detail: str, status_code: int = status.HTTP_400_BA
 
 
 def get_question_by_slug(slug):
-    return Question.objects.select_related("answer", "answer__author").filter(slug=slug).first()
+    return (
+        Question.objects.filter(slug=slug)
+        .select_related("author")
+        .prefetch_related(Prefetch("answers", queryset=Answer.objects.order_by("created_at").select_related("author")))
+        .first()
+    )
 
 
 class FollowUpListCreateView(APIView):
@@ -43,12 +49,8 @@ class FollowUpListCreateView(APIView):
         question = get_question_by_slug(slug)
         if not question:
             return error_response("NOT_FOUND", "Question not found.", status.HTTP_404_NOT_FOUND)
-        try:
-            answer = question.answer
-        except Answer.DoesNotExist:
-            answer = None
-        if not answer:
-            return error_response("NO_ANSWER_YET", "An answer must exist before posting a follow-up.")
+        if not question.answers.exists():
+            return error_response("NO_ANSWER_YET", "At least one answer must exist before posting a follow-up.")
         if question.author_id != request.user.id:
             return error_response("FORBIDDEN", "Only the question author can post follow-ups.", status.HTTP_403_FORBIDDEN)
         body = (request.data.get("body") or "").strip()
@@ -103,14 +105,10 @@ class FollowUpDetailView(APIView):
         question, followup, err = self._get_followup(slug, pk)
         if err:
             return error_response("NOT_FOUND", "Follow-up not found.", status.HTTP_404_NOT_FOUND)
-        try:
-            answer = question.answer
-            answer_author_id = answer.author_id
-        except Answer.DoesNotExist:
-            answer_author_id = None
+        answer_author_ids = list(question.answers.values_list("author_id", flat=True))
         can_delete = (
             followup.author_id == request.user.id
-            or answer_author_id == request.user.id
+            or request.user.id in answer_author_ids
             or getattr(request.user, "is_staff", False)
         )
         if not can_delete:
