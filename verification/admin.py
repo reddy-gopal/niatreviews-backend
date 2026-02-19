@@ -3,7 +3,7 @@ Admin interface for verification models.
 """
 from django.contrib import admin
 from django.utils import timezone
-from .models import SeniorProfile, PhoneVerification, SeniorRegistration, MagicLoginToken
+from .models import SeniorFollow, SeniorProfile, PhoneVerification, SeniorRegistration, MagicLoginToken
 
 
 @admin.register(SeniorProfile)
@@ -201,82 +201,32 @@ class SeniorRegistrationAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ["approve_and_create_accounts", "reject_registrations"]
-    
-    def approve_and_create_accounts(self, request, queryset):
+    actions = ["approve_registrations", "reject_registrations"]
+
+    def approve_registrations(self, request, queryset):
         """
-        Bulk action to approve registrations and create user accounts.
+        Set status to Approved and save. The signal will create User + SeniorProfile and send the approval email.
         """
-        from accounts.models import User
-        from django.utils import timezone
-        
         count = 0
         for registration in queryset.filter(status="pending"):
-            try:
-                # Create username from college email
-                username = registration.college_email.split('@')[0]
-                
-                # Check if user already exists
-                if User.objects.filter(username=username).exists():
-                    self.message_user(
-                        request,
-                        f"User {username} already exists. Skipping {registration.full_name}.",
-                        level='warning'
-                    )
-                    continue
-                
-                # Create user account
-                user = User.objects.create_user(
-                    username=username,
-                    email=registration.personal_email,
-                    first_name=registration.call_name,
-                )
-                
-                # Create SeniorProfile
-                SeniorProfile.objects.create(
-                    user=user,
-                    proof_summary=f"""
-Registration Details:
-College: {registration.partner_college}
-Year: {registration.graduation_year}
-Branch: {registration.branch}
-
-Why Join: {registration.why_join}
-
-Best Experience: {registration.best_experience}
-
-Advice: {registration.advice_to_juniors}
-
-Skills: {registration.skills_gained}
-                    """.strip(),
-                    status='approved'
-                )
-                
-                # Update registration
-                registration.user = user
-                registration.status = 'approved'
-                registration.reviewed_by = request.user
-                registration.reviewed_at = timezone.now()
-                registration.save()
-                
-                # Send approval email
-                from .services import send_senior_approved_email
-                send_senior_approved_email(user)
-                
-                count += 1
-            except Exception as e:
-                self.message_user(
-                    request,
-                    f"Error processing {registration.full_name}: {str(e)}",
-                    level='error'
-                )
-        
+            registration.status = "approved"
+            registration.reviewed_by = request.user
+            registration.reviewed_at = timezone.now()
+            registration.save()
+            count += 1
         self.message_user(
             request,
-            f"Successfully approved {count} registration(s) and created user accounts."
+            f"Approved {count} registration(s). User accounts and approval emails are created by the system.",
         )
-    approve_and_create_accounts.short_description = "Approve and create user accounts"
-    
+    approve_registrations.short_description = "Approve selected (creates user + sends email)"
+
+    def save_model(self, request, obj, form, change):
+        """When status is set to approved or rejected, set reviewed_by and reviewed_at."""
+        if change and "status" in form.changed_data and obj.status in ("approved", "rejected"):
+            obj.reviewed_by = request.user
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
     def reject_registrations(self, request, queryset):
         """
         Bulk action to reject selected registrations.
@@ -296,6 +246,15 @@ Skills: {registration.skills_gained}
             f"Successfully rejected {count} registration(s). Rejection emails sent."
         )
     reject_registrations.short_description = "Reject selected registrations"
+
+
+@admin.register(SeniorFollow)
+class SeniorFollowAdmin(admin.ModelAdmin):
+    list_display = ("follower", "senior", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("follower__username", "senior__username")
+    raw_id_fields = ("follower", "senior")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(MagicLoginToken)

@@ -36,11 +36,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "verification",
-    "community",
+    "qa",
     "notifications",
-    "moderation",
     "reviews",
-    "activity",
     "rest_framework",
     "corsheaders",
 ]
@@ -184,3 +182,13 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
+
+# Demo OTP for senior registration (use real SMS/email in production)
+DEMO_OTP_ENABLED = os.getenv("DEMO_OTP_ENABLED", "true").lower() in ("true", "1", "yes")
+DEMO_OTP_CODE = os.getenv("DEMO_OTP_CODE", "123456")
+
+# Main app URL for magic login links in approval emails
+MAIN_APP_URL = os.getenv("MAIN_APP_URL", "http://localhost:3000")
+
+# Groq API for Q&A question category classification (optional)
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")

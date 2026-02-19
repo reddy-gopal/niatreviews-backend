@@ -1,95 +1,61 @@
 """
-Notification signals - automatically create notifications on user actions.
-Triggered by community app signals (post votes, comments, etc.)
+Notification signals - create notifications on user actions.
+Community-related signals are only registered when the community app is installed.
 """
 import logging
+from django.apps import apps
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
-from community.models import PostVote, Comment, CommentUpvote
-from .services import create_notification
 
 logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender=PostVote)
-def notify_post_vote(sender, instance, created, **kwargs):
-    """Notify post author when someone votes on their post."""
-    if not created:
-        # Vote was updated (changed from upvote to downvote or vice versa)
-        # We could handle this differently, but for now, skip
+def _register_community_signals():
+    """Register notification signals for community app (post votes, comments). Only when community is installed."""
+    if not apps.is_installed("community"):
         return
-    
-    post = instance.post
-    actor = instance.user
-    recipient = post.author
-    
-    # Determine verb based on vote value
-    if instance.value == PostVote.VALUE_UP:
-        verb = "upvoted your post"
-        notification_type_code = "post_upvote"
-    else:
-        verb = "downvoted your post"
-        notification_type_code = "post_downvote"
-    
-    create_notification(
-        recipient=recipient,
-        actor=actor,
-        verb=verb,
-        target=post,
-        notification_type_code=notification_type_code,
-    )
+    from community.models import Comment, CommentUpvote, PostVote
+    from .services import create_notification
+
+    @receiver(post_save, sender=PostVote)
+    def notify_post_vote(sender, instance, created, **kwargs):
+        if not created:
+            return
+        post = instance.post
+        actor = instance.user
+        recipient = post.author
+        if instance.value == PostVote.VALUE_UP:
+            verb, notification_type_code = "upvoted your post", "post_upvote"
+        else:
+            verb, notification_type_code = "downvoted your post", "post_downvote"
+        create_notification(recipient=recipient, actor=actor, verb=verb, target=post, notification_type_code=notification_type_code)
+
+    @receiver(post_save, sender=Comment)
+    def notify_comment_created(sender, instance, created, **kwargs):
+        if not created:
+            return
+        comment = instance
+        actor = comment.author
+        if comment.parent is None:
+            recipient, verb = comment.post.author, "commented on your post"
+            notification_type_code, target = "post_comment", comment.post
+        else:
+            recipient, verb = comment.parent.author, "replied to your comment"
+            notification_type_code, target = "comment_reply", comment.parent
+        create_notification(recipient=recipient, actor=actor, verb=verb, target=target, notification_type_code=notification_type_code)
+
+    @receiver(post_save, sender=CommentUpvote)
+    def notify_comment_upvote(sender, instance, created, **kwargs):
+        if not created:
+            return
+        comment = instance.comment
+        create_notification(
+            recipient=comment.author,
+            actor=instance.user,
+            verb="upvoted your comment",
+            target=comment,
+            notification_type_code="comment_upvote",
+        )
 
 
-@receiver(post_save, sender=Comment)
-def notify_comment_created(sender, instance, created, **kwargs):
-    """
-    Notify when someone comments on a post or replies to a comment.
-    - If top-level comment: notify post author
-    - If reply: notify parent comment author
-    """
-    if not created:
-        return
-    
-    comment = instance
-    actor = comment.author
-    
-    if comment.parent is None:
-        # Top-level comment on post
-        recipient = comment.post.author
-        verb = "commented on your post"
-        notification_type_code = "post_comment"
-        target = comment.post
-    else:
-        # Reply to another comment
-        recipient = comment.parent.author
-        verb = "replied to your comment"
-        notification_type_code = "comment_reply"
-        target = comment.parent
-    
-    create_notification(
-        recipient=recipient,
-        actor=actor,
-        verb=verb,
-        target=target,
-        notification_type_code=notification_type_code,
-    )
-
-
-@receiver(post_save, sender=CommentUpvote)
-def notify_comment_upvote(sender, instance, created, **kwargs):
-    """Notify comment author when someone upvotes their comment."""
-    if not created:
-        return
-    
-    comment = instance.comment
-    actor = instance.user
-    recipient = comment.author
-    
-    create_notification(
-        recipient=recipient,
-        actor=actor,
-        verb="upvoted your comment",
-        target=comment,
-        notification_type_code="comment_upvote",
-    )
+_register_community_signals()

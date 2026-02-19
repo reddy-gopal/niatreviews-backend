@@ -1,13 +1,62 @@
 """
 Email services for verification workflow.
 """
+import builtins
+import uuid as uuid_module
 from datetime import timedelta
 
-from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
 from django.utils import timezone
 
-from .models import MagicLoginToken
+from .models import MagicLoginToken, SeniorProfile
+
+User = get_user_model()
+
+
+def create_user_and_senior_profile_for_registration(registration):
+    """
+    Create a User and SeniorProfile for an approved SeniorRegistration and link them.
+    Call this when registration.status is "approved" and registration.user_id is None.
+    Returns the created User, or None if already linked or creation failed.
+    """
+    if registration.user_id is not None:
+        return None
+    username = registration.college_email.split("@")[0].strip()
+    if User.objects.filter(username=username).exists():
+        return None
+    try:
+        password = uuid_module.uuid4().hex
+        user = User.objects.create_user(
+            username=username,
+            email=registration.personal_email,
+            first_name=registration.call_name,
+            password=password,
+            role="senior",
+        )
+        user.set_unusable_password()
+        user.save(update_fields=["password"])
+        proof = (
+            f"Registration Details:\n"
+            f"College: {registration.partner_college}\n"
+            f"Year: {registration.graduation_year}\n"
+            f"Branch: {registration.branch}\n\n"
+            f"Why Join: {registration.why_join}\n\n"
+            f"Best Experience: {registration.best_experience}\n\n"
+            f"Advice: {registration.advice_to_juniors}\n\n"
+            f"Skills: {registration.skills_gained}"
+        )
+        SeniorProfile.objects.create(
+            user=user,
+            proof_summary=proof,
+            status="approved",
+        )
+        SeniorRegistration = registration.__class__
+        SeniorRegistration.objects.filter(pk=registration.pk).update(user=user)
+        return user
+    except Exception:
+        return None
 
 
 def create_magic_login_token(user, expiry_minutes=30):
@@ -17,7 +66,7 @@ def create_magic_login_token(user, expiry_minutes=30):
     """
     expires_at = timezone.now() + timedelta(minutes=expiry_minutes)
     ml = MagicLoginToken.objects.create(user=user, expires_at=expires_at)
-    return str(ml.token)
+    return builtins.str(ml.token)
 
 
 def send_senior_received_email(user):
@@ -63,7 +112,8 @@ def send_senior_approved_email(user):
     """
     subject = "You're Approved 🎉 Welcome to NIATReviews!"
     magic_token = create_magic_login_token(user)
-    login_url = f"https://niatreviews.com/auth/magic?token={magic_token}"
+    base_url = getattr(settings, "MAIN_APP_URL", "https://niatreviews.com").rstrip("/")
+    login_url = f"{base_url}/auth/magic?token={magic_token}"
 
     message = f"""Hi {user.first_name or user.username},
 
@@ -144,13 +194,20 @@ Need help? Reply to this email or contact us at support@niatreviews.com
 
 def send_senior_registration_approved_email(registration):
     """
-    Sent when admin approves a SeniorRegistration and creates user account.
-    Uses personal_email and provides login credentials.
+    Sent when admin approves a SeniorRegistration (via signal).
+    When registration.user is set, includes a one-time magic login link so the senior
+    can sign in, set their password, and complete onboarding.
     """
     subject = "You're Approved 🎉 Welcome to NIATReviews!"
-
-    # Get username from linked user account
     username = registration.user.username if registration.user else registration.college_email.split('@')[0]
+
+    # One-time magic login link when we have a linked user (admin has created the account)
+    login_line = "👉 Login here: https://niatreviews.com/login"
+    if registration.user_id:
+        magic_token = create_magic_login_token(registration.user)
+        base_url = getattr(settings, "MAIN_APP_URL", "https://niatreviews.com").rstrip("/")
+        login_url = f"{base_url}/auth/magic?token={magic_token}"
+        login_line = f"Get started now (this link expires in 30 minutes):\n👉 Sign in with one click: {login_url}\n\nAfter signing in you’ll set a password and answer a few NIAT review questions, then you can start answering questions from prospective students."
 
     message = f"""Hi {registration.call_name},
 
@@ -170,8 +227,7 @@ What you can do now:
 • Help guide the next generation of NIAT students
 • Build your reputation as a trusted mentor
 
-Get started now:
-👉 Login here: https://niatreviews.com/login
+{login_line}
 
 Your verified senior badge will be visible on all your posts and comments, helping students identify authentic advice from real NIAT seniors.
 

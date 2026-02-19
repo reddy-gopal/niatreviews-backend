@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.views import RegisterView, MeView, UserProfileByUsernameView
 from verification.magic_login_views import MagicLoginView
+from qa.dashboard_views import SeniorDashboardView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -30,9 +31,11 @@ urlpatterns = [
     path("api/auth/me/", MeView.as_view(), name="me"),
     path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
     path("api/users/<str:username>/", UserProfileByUsernameView.as_view(), name="user-profile-by-username"),
-    path("api/", include("community.urls")),
+    path("api/", include("qa.urls")),
+    path("api/dashboard/senior/", SeniorDashboardView.as_view(), name="dashboard-senior"),
     path("api/", include("notifications.urls")),
     path("api/verification/", include("verification.urls")),
+    path("api/seniors/", include("verification.senior_urls")),
     path("api/senior/", include("reviews.onboarding_urls")),
 ]
 

@@ -120,6 +120,11 @@ class SeniorProfile(models.Model):
         db_index=True,
         help_text="True after senior completes onboarding review.",
     )
+    follower_count = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text="Denormalized count of users following this senior.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -256,3 +261,30 @@ class MagicLoginToken(models.Model):
     @property
     def is_valid(self):
         return not self.is_used and not self.is_expired
+
+
+class SeniorFollow(models.Model):
+    """User follows a verified senior. Unique (follower, senior)."""
+    follower = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="following_seniors",
+        db_index=True,
+    )
+    senior = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="followers",
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "verification_senior_follow"
+        constraints = [
+            models.UniqueConstraint(fields=["follower", "senior"], name="verification_senior_follow_unique"),
+        ]
+        indexes = [models.Index(fields=["senior", "created_at"])]
+
+    def __str__(self):
+        return f"{self.follower_id} -> {self.senior_id}"

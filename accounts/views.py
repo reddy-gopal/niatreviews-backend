@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 
-from .serializers import ProfileSerializer, PublicProfileSerializer
+from .serializers import ProfileSerializer, PublicProfileSerializer, SeniorsSetupSerializer
 
 User = get_user_model()
 
@@ -44,10 +44,23 @@ class MeView(APIView):
 
     def get(self, request):
         serializer = ProfileSerializer(request.user)
-        return Response(serializer.data)
+        data = dict(serializer.data)
+        data["needs_password_set"] = not request.user.has_usable_password()
+        return Response(data)
 
     def patch(self, request):
-        serializer = ProfileSerializer(request.user, data=request.data, partial=True)
+        user = request.user
+        # First-time setup: allow setting username and password when no usable password
+        if not user.has_usable_password():
+            setup = SeniorsSetupSerializer(data=request.data, context={"user": user})
+            if setup.is_valid():
+                if setup.validated_data.get("username"):
+                    user.username = setup.validated_data["username"].strip()
+                user.set_password(setup.validated_data["password"])
+                user.save(update_fields=["username", "password"])
+                return Response(ProfileSerializer(user).data)
+            return Response(setup.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer = ProfileSerializer(user, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
@@ -61,6 +74,6 @@ class UserProfileByUsernameView(APIView):
     def get(self, request, username):
         user = User.objects.filter(username=username).first()
         if not user:
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
-        serializer = PublicProfileSerializer(user)
+            return Response({"code": "NOT_FOUND", "detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = PublicProfileSerializer(user, context={"request": request})
         return Response(serializer.data)

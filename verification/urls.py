@@ -9,8 +9,14 @@ from .views import (
     SeniorRegistrationCreateAPIView,
     SeniorRegistrationListAPIView,
 )
+from .otp_views import OTPRequestView, OTPVerifyView, SeniorRegistrationStatusView
 
 urlpatterns = [
+    # Demo OTP (seniors-frontend registration)
+    path("otp/request/", OTPRequestView.as_view(), name="otp-request"),
+    path("otp/verify/", OTPVerifyView.as_view(), name="otp-verify"),
+    path("senior/registration-status/", SeniorRegistrationStatusView.as_view(), name="senior-registration-status"),
+    #
     # Senior verification (simple - for authenticated users)
     path(
         "senior/apply/",

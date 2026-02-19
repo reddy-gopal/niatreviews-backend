@@ -56,9 +56,16 @@ class MagicLoginView(APIView):
         ml.is_used = True
         ml.save(update_fields=["is_used"])
         refresh = RefreshToken.for_user(user)
-        redirect = "/onboarding/review" if not user.senior_profile.review_submitted else "/community"
+        needs_password_set = not user.has_usable_password()
+        if needs_password_set:
+            redirect = "/auth/setup"
+        elif not user.senior_profile.review_submitted:
+            redirect = "/onboarding/review"
+        else:
+            redirect = "/"
         return Response({
             "access": str(refresh.access_token),
             "refresh": str(refresh),
             "redirect": redirect,
+            "needs_password_set": needs_password_set,
         })
