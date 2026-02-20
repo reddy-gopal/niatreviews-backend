@@ -152,7 +152,11 @@ class SeniorRegistration(models.Model):
     full_name = models.CharField(max_length=255, help_text="Full legal name")
     call_name = models.CharField(max_length=100, help_text="Preferred name or nickname")
     college_email = models.EmailField(db_index=True, help_text="College email address")
-    personal_email = models.EmailField(help_text="Personal email for notifications")
+    personal_email = models.EmailField(
+        unique=True,
+        db_index=True,
+        help_text="Personal email for notifications; must be unique across registrations and users.",
+    )
     phone = models.CharField(max_length=20, help_text="Phone number")
     
     # Academic Info
@@ -231,7 +235,7 @@ class SeniorRegistration(models.Model):
 class MagicLoginToken(models.Model):
     """
     Passwordless magic link login for approved seniors.
-    Single-use, expires in 30 minutes.
+    Single-use; expires in 48 hours or immediately after first use.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(

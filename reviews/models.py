@@ -132,6 +132,8 @@ class SeniorOnboardingReview(models.Model):
     who_should_join_text = models.TextField()
     final_recommendation_choice = models.CharField(max_length=32, choices=FINAL_RECOMMENDATION_CHOICES)
 
+    linkedin_profile_url = models.URLField(max_length=512, help_text="LinkedIn profile URL (e.g. https://linkedin.com/in/username)")
+
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 

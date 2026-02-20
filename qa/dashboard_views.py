@@ -30,10 +30,11 @@ class SeniorDashboardView(APIView):
         user = request.user
 
         my_answers_total = Answer.objects.filter(author=user).count()
+        # Top 5 freshest unanswered questions only
         pending_questions = list(
             Question.objects.filter(is_answered=False)
             .select_related("author")
-            .order_by("-created_at")[:10]
+            .order_by("-created_at")[:5]
         )
         pending_serializer = QuestionListSerializer(
             pending_questions,

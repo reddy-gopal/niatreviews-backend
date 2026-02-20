@@ -32,6 +32,7 @@ def _valid_payload():
         "recommendation_score": 5,
         "who_should_join_text": "Serious students who want hands-on technical exposure.",
         "final_recommendation_choice": "yes_definitely",
+        "linkedin_profile_url": "https://www.linkedin.com/in/testprofile",
     }
 
 
@@ -49,7 +50,7 @@ class MagicLoginTestCase(TestCase):
         self.assertIn("refresh", r.data)
         self.assertEqual(r.data["redirect"], "/onboarding/review")
         ml.refresh_from_db()
-        self.assertTrue(ml.is_used)
+        self.assertFalse(ml.is_used)  # Token stays valid until account setup (set password)
 
     def test_magic_login_after_onboarding_redirects_to_community(self):
         self.profile.review_submitted = True
@@ -57,7 +58,7 @@ class MagicLoginTestCase(TestCase):
         ml = MagicLoginToken.objects.create(user=self.user, expires_at=timezone.now() + timedelta(minutes=30))
         r = self.client.get(reverse("magic-login"), {"token": str(ml.token)})
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["redirect"], "/community")
+        self.assertEqual(r.data["redirect"], "/")
 
     def test_magic_login_expired_returns_400(self):
         ml = MagicLoginToken.objects.create(user=self.user, expires_at=timezone.now() - timedelta(minutes=1))
@@ -65,11 +66,24 @@ class MagicLoginTestCase(TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("expired", r.data["detail"].lower())
 
-    def test_magic_login_used_twice_returns_400(self):
-        ml = MagicLoginToken.objects.create(user=self.user, expires_at=timezone.now() + timedelta(minutes=30))
-        self.client.get(reverse("magic-login"), {"token": str(ml.token)})
+    def test_magic_login_works_multiple_times_until_setup(self):
+        ml = MagicLoginToken.objects.create(user=self.user, expires_at=timezone.now() + timedelta(hours=48))
+        r1 = self.client.get(reverse("magic-login"), {"token": str(ml.token)})
+        r2 = self.client.get(reverse("magic-login"), {"token": str(ml.token)})
+        self.assertEqual(r1.status_code, status.HTTP_200_OK)
+        self.assertEqual(r2.status_code, status.HTTP_200_OK)
+        ml.refresh_from_db()
+        self.assertFalse(ml.is_used)
+
+    def test_magic_login_after_setup_returns_400(self):
+        self.user.set_password("newpass")
+        self.user.save(update_fields=["password"])
+        ml = MagicLoginToken.objects.create(user=self.user, expires_at=timezone.now() + timedelta(hours=48))
+        # Simulate setup completion: mark tokens used (as MeView does after set_password)
+        MagicLoginToken.objects.filter(user=self.user).update(is_used=True)
         r = self.client.get(reverse("magic-login"), {"token": str(ml.token)})
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already been used", r.data["detail"].lower())
 
     def test_magic_login_invalid_token_returns_404(self):
         r = self.client.get(reverse("magic-login"), {"token": "00000000-0000-0000-0000-000000000000"})

@@ -13,7 +13,9 @@ class MagicLoginView(APIView):
     """
     GET /api/auth/magic-login/?token=<uuid>
     Validates token, ensures senior is approved, returns JWT + redirect path.
-    Frontend stores tokens and redirects.
+    The token can be used multiple times (e.g. open link, come back, use again)
+    and always redirects to setup if password not set. It is invalidated only
+    after the user successfully completes account setup (sets password).
     """
 
     permission_classes = [AllowAny]
@@ -53,8 +55,7 @@ class MagicLoginView(APIView):
                 {"detail": "Your senior account is not yet approved."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        ml.is_used = True
-        ml.save(update_fields=["is_used"])
+        # Token is not marked used here; it stays valid until they complete account setup (set password).
         refresh = RefreshToken.for_user(user)
         needs_password_set = not user.has_usable_password()
         if needs_password_set:

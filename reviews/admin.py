@@ -35,4 +35,5 @@ class SeniorOnboardingReviewAdmin(admin.ModelAdmin):
         ("Placements & Career", {"fields": ("placement_support", "job_ready_text", "placement_reality_choice")}),
         ("Overall Experience", {"fields": ("overall_satisfaction", "one_line_experience", "experience_feel_choice")}),
         ("Recommendation", {"fields": ("recommendation_score", "who_should_join_text", "final_recommendation_choice")}),
+        ("Profile", {"fields": ("linkedin_profile_url",)}),
     )

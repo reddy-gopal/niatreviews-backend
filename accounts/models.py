@@ -9,6 +9,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    email = models.EmailField("email address", blank=True, null=True, unique=True, db_index=True)
     """
     Custom user with UUID primary key for scalability and non-sequential IDs.
     Tracks role and whether the user is a verified NIAT senior (can comment).
@@ -55,7 +56,6 @@ class User(AbstractUser):
         db_table = "accounts_user"
         indexes = [
             models.Index(fields=["username"]),
-            models.Index(fields=["email"]),
             models.Index(fields=["is_verified_senior", "is_active"]),
             models.Index(fields=["phone_verified"]),
         ]

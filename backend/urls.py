@@ -19,7 +19,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from accounts.views import RegisterView, MeView, UserProfileByUsernameView
+from accounts.views import (
+    RegisterView,
+    MeView,
+    UserProfileByUsernameView,
+    ForgotPasswordResetView,
+    ChangePasswordView,
+    DeleteAccountView,
+)
 from verification.magic_login_views import MagicLoginView
 from qa.dashboard_views import SeniorDashboardView
 
@@ -28,7 +35,10 @@ urlpatterns = [
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/register/", RegisterView.as_view(), name="register"),
+    path("api/auth/forgot-password/reset/", ForgotPasswordResetView.as_view(), name="forgot-password-reset"),
     path("api/auth/me/", MeView.as_view(), name="me"),
+    path("api/auth/change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("api/auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
     path("api/users/<str:username>/", UserProfileByUsernameView.as_view(), name="user-profile-by-username"),
     path("api/", include("qa.urls")),

@@ -1,5 +1,6 @@
 # reviews API serializers
 
+import re
 from rest_framework import serializers
 
 from .models import SeniorOnboardingReview
@@ -37,6 +38,24 @@ def _validate_choice(value, field_name, allowed):
     return value
 
 
+# LinkedIn profile URL: must be https?://...(www.)?linkedin.com/in/<slug>/...
+LINKEDIN_PROFILE_RE = re.compile(
+    r"^https?://(www\.)?linkedin\.com/in/[a-zA-Z0-9_-]+/?",
+    re.IGNORECASE,
+)
+
+
+def _validate_linkedin_url(value, field_name="linkedin_profile_url"):
+    if not value or not str(value).strip():
+        raise serializers.ValidationError({field_name: "This field is required."})
+    url = str(value).strip()
+    if not LINKEDIN_PROFILE_RE.match(url):
+        raise serializers.ValidationError(
+            {field_name: "Enter a valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourprofile)"}
+        )
+    return url
+
+
 class SeniorOnboardingReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = SeniorOnboardingReview
@@ -46,6 +65,7 @@ class SeniorOnboardingReviewSerializer(serializers.ModelSerializer):
             "placement_support", "job_ready_text", "placement_reality_choice",
             "overall_satisfaction", "one_line_experience", "experience_feel_choice",
             "recommendation_score", "who_should_join_text", "final_recommendation_choice",
+            "linkedin_profile_url",
         ]
 
     def validate_teaching_quality(self, v): return _validate_rating(v, "teaching_quality")
@@ -63,3 +83,4 @@ class SeniorOnboardingReviewSerializer(serializers.ModelSerializer):
     def validate_recommendation_score(self, v): return _validate_rating(v, "recommendation_score")
     def validate_who_should_join_text(self, v): return _validate_text(v, "who_should_join_text")
     def validate_final_recommendation_choice(self, v): return _validate_choice(v, "final_recommendation_choice", FINAL_RECOMMENDATION_VALUES)
+    def validate_linkedin_profile_url(self, v): return _validate_linkedin_url(v)

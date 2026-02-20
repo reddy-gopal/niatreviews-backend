@@ -23,6 +23,10 @@ def create_user_and_senior_profile_for_registration(registration):
     """
     if registration.user_id is not None:
         return None
+    # Email must be unique; reject if already taken by another user
+    email = (registration.personal_email or "").strip()
+    if email and User.objects.filter(email__iexact=email).exists():
+        return None
     username = registration.college_email.split("@")[0].strip()
     if User.objects.filter(username=username).exists():
         return None
@@ -30,7 +34,7 @@ def create_user_and_senior_profile_for_registration(registration):
         password = uuid_module.uuid4().hex
         user = User.objects.create_user(
             username=username,
-            email=registration.personal_email,
+            email=email or None,
             first_name=registration.call_name,
             password=password,
             role="senior",
@@ -59,12 +63,13 @@ def create_user_and_senior_profile_for_registration(registration):
         return None
 
 
-def create_magic_login_token(user, expiry_minutes=30):
+def create_magic_login_token(user, expiry_hours=48):
     """
     Create a single-use magic login token for the user.
     Returns the token UUID (use for building link: /auth/magic?token=<uuid>).
+    Token expires after expiry_hours; it is also invalidated as soon as it is used to log in.
     """
-    expires_at = timezone.now() + timedelta(minutes=expiry_minutes)
+    expires_at = timezone.now() + timedelta(hours=expiry_hours)
     ml = MagicLoginToken.objects.create(user=user, expires_at=expires_at)
     return builtins.str(ml.token)
 
@@ -108,7 +113,7 @@ Need help? Reply to this email or contact us at support@niatreviews.com
 def send_senior_approved_email(user):
     """
     Sent when admin approves the senior profile.
-    Congratulates and provides next steps. Includes magic login link (30 min).
+    Congratulates and provides next steps. Includes magic login link (48 hours, single-use).
     """
     subject = "You're Approved 🎉 Welcome to NIATReviews!"
     magic_token = create_magic_login_token(user)
@@ -127,7 +132,7 @@ What you can do now:
 • Help guide the next generation of NIAT students
 • Build your reputation as a trusted mentor
 
-Get started now (this link expires in 30 minutes):
+Get started now (this link expires in 48 hours and works only once):
 👉 Click to log in: {login_url}
 
 Your verified senior badge will be visible on all your posts and comments, helping students identify authentic advice from real NIAT seniors.
@@ -207,7 +212,7 @@ def send_senior_registration_approved_email(registration):
         magic_token = create_magic_login_token(registration.user)
         base_url = getattr(settings, "MAIN_APP_URL", "https://niatreviews.com").rstrip("/")
         login_url = f"{base_url}/auth/magic?token={magic_token}"
-        login_line = f"Get started now (this link expires in 30 minutes):\n👉 Sign in with one click: {login_url}\n\nAfter signing in you’ll set a password and answer a few NIAT review questions, then you can start answering questions from prospective students."
+        login_line = f"Get started now (this link expires in 48 hours and works only once):\n👉 Sign in with one click: {login_url}\n\nAfter signing in you’ll set a password and answer a few NIAT review questions, then you can start answering questions from prospective students."
 
     message = f"""Hi {registration.call_name},
 

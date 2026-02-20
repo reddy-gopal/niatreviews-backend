@@ -1,8 +1,11 @@
 """
 Verification API serializers.
 """
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from .models import SeniorProfile, PhoneVerification, SeniorRegistration
+
+User = get_user_model()
 
 
 class SeniorProfileSerializer(serializers.ModelSerializer):
@@ -58,6 +61,7 @@ class PhoneVerificationSerializer(serializers.ModelSerializer):
 class SeniorRegistrationSerializer(serializers.ModelSerializer):
     """
     Serializer for detailed senior registration from seniors-frontend.
+    Enforces unique personal_email (must not exist on User or another SeniorRegistration).
     """
     class Meta:
         model = SeniorRegistration
@@ -84,3 +88,22 @@ class SeniorRegistrationSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "status", "created_at"]
+
+    def validate_personal_email(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Personal email is required.")
+        email = value.strip().lower()
+        # Must not already be used by a User
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists. Use a different email or log in."
+            )
+        # Must not already be used by another SeniorRegistration (any status)
+        qs = SeniorRegistration.objects.filter(personal_email__iexact=email)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                "This email is already registered. Use a different email or check your application status."
+            )
+        return value.strip()
