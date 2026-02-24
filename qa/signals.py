@@ -1,8 +1,18 @@
-"""Keep denormalized counts and is_answered in sync."""
+"""Keep denormalized counts and is_answered in sync; keep search_vector in sync for PostgreSQL FTS."""
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.contrib.postgres.search import SearchVector
 
 from .models import Question, Answer, QuestionVote, AnswerVote
+
+
+@receiver(post_save, sender=Question)
+def update_question_search_vector(sender, instance, **kwargs):
+    """Update stored search_vector on every Question save (PostgreSQL FTS). Uses update() to avoid recursion."""
+    Question.objects.filter(pk=instance.pk).update(
+        search_vector=SearchVector("title", weight="A", config="english")
+        + SearchVector("body", weight="B", config="english")
+    )
 
 
 @receiver(post_save, sender=QuestionVote)

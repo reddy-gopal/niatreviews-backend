@@ -1,0 +1,1545 @@
+[
+  {
+    "model": "sessions.session",
+    "pk": "4kteqxhw1rj79im7exevjwn8ngyk1vc7",
+    "fields": {
+      "session_data": ".eJxVjDsOwjAMQO-SmUb51HHSkZ0zVI4T0wJqpX4mxN1RpQ4wv89b9bRvQ7-vdenHojolmKCIpIYjuKaNoTTZATbVRMHsU3Di1eU3y8TPOh1tedB0nzXP07aMWR-KPumqb3Opr-vp_g0GWgfVKeBAISZvkAHbSNaaSEXI55A4eAzOFs-EVTAAkGMTLcTKNVvjklj1-QLa-ECp:1vpmBb:JvGUQBc3od0ZxlCXk0cCf80OVgf8Rdi-sN8WihqjP14",
+      "expire_date": "2026-02-24T11:45:43.703Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "4pgi3vr5ueew0per9czdnts8zxi9o3sf",
+    "fields": {
+      "session_data": ".eJxVjDkOwjAQAP_iGlu-j5T0vCHa9a5JACVSjgrxdxQpBdRzvEUP-zb0-8pLP5LoREslUGtF1hys9DmSRBuSZJ1bQleibU5cfjOE-uTpaOkB031WdZ62ZUR1KOqkq7rNxK_r6f4NBlgH0Qm0VNGRNwTBFF8wOHZQi3aIXGPMAAC51GATausbk9FUjMkh1syNxecLEXBB7A:1vswxq:dq6SRvL3Io48d_aEyUwGJml6aREPDJjD02i-ZBMoneA",
+      "expire_date": "2026-03-05T05:52:38.727Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "hodjlsk6yekapoiaqrjqfqi6h4fkacye",
+    "fields": {
+      "session_data": ".eJxVjDkOwjAQAP_iGlu-j5T0vCHa9a5JACVSjgrxdxQpBdRzvEUP-zb0-8pLP5LoREslUGtF1hys9DmSRBuSZJ1bQleibU5cfjOE-uTpaOkB031WdZ62ZUR1KOqkq7rNxK_r6f4NBlgH0Qm0VNGRNwTBFF8wOHZQi3aIXGPMAAC51GATausbk9FUjMkh1syNxecLEXBB7A:1vq3q9:Jl-5QUN8PZ8ZsV0MylkWm7AD4CJRfDMAZxEbbhjiHG4",
+      "expire_date": "2026-02-25T06:36:45.416Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "ptegqfi1yhtphc35vco0n5ht4qqlm5vs",
+    "fields": {
+      "session_data": ".eJxVjDkOwjAQAP_iGlu-j5T0vCHa9a5JACVSjgrxdxQpBdRzvEUP-zb0-8pLP5LoREslUGtF1hys9DmSRBuSZJ1bQleibU5cfjOE-uTpaOkB031WdZ62ZUR1KOqkq7rNxK_r6f4NBlgH0Qm0VNGRNwTBFF8wOHZQi3aIXGPMAAC51GATausbk9FUjMkh1syNxecLEXBB7A:1vsDjX:Qz0JsbG7ENZl2cQkgVHQAgI4Xv54pIp-erUBgkB0xUI",
+      "expire_date": "2026-03-03T05:34:51.608Z"
+    }
+  },
+  {
+    "model": "sessions.session",
+    "pk": "yfcf26f7mfe9z4d8ckd97s8z2nmp8qnc",
+    "fields": {
+      "session_data": ".eJxVjDkOwjAQAP_iGlu-j5T0vCHa9a5JACVSjgrxdxQpBdRzvEUP-zb0-8pLP5LoREslUGtF1hys9DmSRBuSZJ1bQleibU5cfjOE-uTpaOkB031WdZ62ZUR1KOqkq7rNxK_r6f4NBlgH0Qm0VNGRNwTBFF8wOHZQi3aIXGPMAAC51GATausbk9FUjMkh1syNxecLEXBB7A:1vt5EG:DB8snHYmZfx2mexINURJrgizA9TWemSXjPobFmpZwYo",
+      "expire_date": "2026-03-05T14:42:08.309Z"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$gOl0qO6uEUox0URzc7TEXG$VxP7XQfcHwAVzS+nWitJdZT7+0w2AlUuqNj+NJULz7Y=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "prashanth",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-13T13:06:45Z",
+      "email": "gopalreddyanthapu007@gmail.com",
+      "role": "student",
+      "is_verified_senior": false,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "testuser",
+      "first_name": "Test",
+      "last_name": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-13T04:51:47.763Z",
+      "email": "test@example.com",
+      "role": "student",
+      "is_verified_senior": false,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$16CreMNLbRg2fDRkJmgoOa$P0nO/wfCqZIXRz5Fs5LtW+28vNEennDCNc4Wk4jRkf8=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "rahul",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-12T05:20:42.901Z",
+      "email": "rahul@gmail.com",
+      "role": "student",
+      "is_verified_senior": false,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "!HJz0P3T0sVjGrh1gZX5wHypwT2Mu4ASx0lnUl1sR",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "niat_seed",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-17T04:42:27.142Z",
+      "email": "seed@niat.local",
+      "role": "senior",
+      "is_verified_senior": true,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$YsEXHBJwyQMkRTh1ASGMKG$tKIToG9fzJnVZhcnPn6q/ctTK7T5yW8XjVPvordXs+I=",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "rohith",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-11T13:20:26.739Z",
+      "email": "rohith@gmail.com",
+      "role": "student",
+      "is_verified_senior": false,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$7LydkuHLUrNm2tF8tUl0f5$DMu5OWE9KmjJPAq22SH047oKETjtks75g2ZUKOYfUH0=",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "gopalreddyanthapu007",
+      "first_name": "gops",
+      "last_name": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2026-02-19T10:07:22.769Z",
+      "email": "gopalreddyanthapu07@gmail.com",
+      "role": "senior",
+      "is_verified_senior": true,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "accounts.user",
+    "fields": {
+      "password": "pbkdf2_sha256$1000000$9ZCa6HqAs1VkfQwFDaOONp$xBOepbi15KKvcluf8A+LyUqFfcP5lZqXqmTr7UHfAkU=",
+      "last_login": "2026-02-19T14:42:08.306Z",
+      "is_superuser": true,
+      "username": "gopal",
+      "first_name": "",
+      "last_name": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2026-02-10T11:13:46.673Z",
+      "email": "gopal@gmail.com",
+      "role": "student",
+      "is_verified_senior": false,
+      "phone_number": null,
+      "phone_verified": false,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "verification.seniorprofile",
+    "pk": "2834eaec-3fe7-465e-a7aa-21c14c864972",
+    "fields": {
+      "user": [
+        "gopalreddyanthapu007"
+      ],
+      "proof_summary": "Registration Details:\nCollege: CDU\nYear: 2028\nBranch: BSC\n\nWhy Join: dklsnvfdwl\n\nBest Experience: asdv d\n\nAdvice: klasdvkad\n\nSkills: ,akds fva,rr",
+      "status": "approved",
+      "reviewed_by": null,
+      "reviewed_at": null,
+      "admin_notes": "",
+      "review_submitted": true,
+      "onboarding_completed": true,
+      "follower_count": 0,
+      "created_at": "2026-02-19T10:07:23.235Z",
+      "updated_at": "2026-02-19T10:36:13.818Z"
+    }
+  },
+  {
+    "model": "verification.seniorregistration",
+    "pk": "2ec37caf-c9e6-48ca-8507-684e7a97b406",
+    "fields": {
+      "full_name": "Anthapu Gopal reddy",
+      "call_name": "gops",
+      "college_email": "gopalreddyanthapu007@gmail.com",
+      "personal_email": "gopalreddyanthapu07@gmail.com",
+      "phone": "8790930575",
+      "partner_college": "CDU",
+      "graduation_year": "2028",
+      "branch": "BSC",
+      "student_id": "N24H01B0278",
+      "current_status": "Student",
+      "id_card_image": "senior_registrations/id_cards/Screenshot_2026-02-06_174958.png",
+      "why_join": "dklsnvfdwl",
+      "best_experience": "asdv d",
+      "advice_to_juniors": "klasdvkad",
+      "skills_gained": ",akds fva,rr",
+      "college_email_verified": true,
+      "phone_verified": true,
+      "status": "pending",
+      "reviewed_by": null,
+      "reviewed_at": "2026-02-19T10:18:48Z",
+      "admin_notes": "",
+      "user": null,
+      "created_at": "2026-02-19T10:05:35.095Z",
+      "updated_at": "2026-02-20T04:37:23.302Z"
+    }
+  },
+  {
+    "model": "verification.magiclogintoken",
+    "pk": "0a319ea2-1c30-4ae5-81b6-6aff65ada474",
+    "fields": {
+      "user": [
+        "gopalreddyanthapu007"
+      ],
+      "token": "eaf9ca29-a9d5-4d4c-bf35-16713218a6ff",
+      "expires_at": "2026-02-19T10:37:23.236Z",
+      "is_used": true,
+      "created_at": "2026-02-19T10:07:23.236Z"
+    }
+  },
+  {
+    "model": "verification.magiclogintoken",
+    "pk": "a0bdb80b-28f6-4249-b2bd-47c3dda64164",
+    "fields": {
+      "user": [
+        "gopalreddyanthapu007"
+      ],
+      "token": "aaa91a63-2b73-419d-b953-f66a21a737bc",
+      "expires_at": "2026-02-21T10:18:48.811Z",
+      "is_used": true,
+      "created_at": "2026-02-19T10:18:48.812Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "074eec84-6da3-4ea2-892a-3ecb9865e62c",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Does NIAT guarantee placement after graduation?",
+      "slug": "does-niat-guarantee-placement-after-graduation",
+      "body": "",
+      "category": "Placements & Career",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.271Z",
+      "updated_at": "2026-02-17T04:42:27.271Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "0d4a37ad-54ea-4cdd-b6f4-8a1bdb6da43c",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What is the campus infrastructure like at NIAT?",
+      "slug": "what-is-the-campus-infrastructure-like-at-niat",
+      "body": "",
+      "category": "Campus Life",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.311Z",
+      "updated_at": "2026-02-17T04:42:27.311Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "10c430b5-4017-4c35-aafd-6b77248a4cd5",
+    "fields": {
+      "author": [
+        "gopal"
+      ],
+      "title": "how the seniors helps me out??",
+      "slug": "how-the-seniors-helps-me-out",
+      "body": "",
+      "category": "Campus Life",
+      "category_confidence": 0.8,
+      "category_source": "llm",
+      "is_answered": false,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-20T04:33:56.184Z",
+      "updated_at": "2026-02-20T04:33:56.184Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "1254adad-892e-47e7-8182-73d6e16e95a4",
+    "fields": {
+      "author": [
+        "gopal"
+      ],
+      "title": "How's the food in NIAT Hostel ??",
+      "slug": "hows-the-food-in-niat-hostel",
+      "body": "",
+      "category": "Hostel & Accommodation",
+      "category_confidence": 0.8,
+      "category_source": "llm",
+      "is_answered": false,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 11,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-19T04:19:46.699Z",
+      "updated_at": "2026-02-19T04:19:46.699Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "160c066e-d628-46b9-a240-289f1a7f7558",
+    "fields": {
+      "author": [
+        "gopal"
+      ],
+      "title": "What is the fee in NIAT ??",
+      "slug": "what-is-the-fee-in-niat",
+      "body": "",
+      "category": "Scholarships & Fee",
+      "category_confidence": 0.9,
+      "category_source": "llm",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 42,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-19T07:12:25.416Z",
+      "updated_at": "2026-02-19T07:12:25.416Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "323982ca-fcd8-4021-85b6-86d36a75a03c",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Is admission guaranteed after I clear the NAT?",
+      "slug": "is-admission-guaranteed-after-i-clear-the-nat",
+      "body": "",
+      "category": "Admissions & Eligibility",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.210Z",
+      "updated_at": "2026-02-17T04:42:27.210Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "3911f3bc-d2e7-4a99-99df-05d432bbe9e3",
+    "fields": {
+      "author": [
+        "gopal"
+      ],
+      "title": "is Niat real ??",
+      "slug": "is-niat-real",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": false,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 10,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T06:40:40.736Z",
+      "updated_at": "2026-02-17T06:40:40.736Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "3fd06a78-2a52-4d29-a538-f9773d5ba6c2",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What is the total fee for the B.Tech program at NIAT?",
+      "slug": "what-is-the-total-fee-for-the-btech-program-at-niat",
+      "body": "",
+      "category": "Scholarships & Fee",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": true,
+      "faq_order": 4,
+      "created_at": "2026-02-17T04:42:27.227Z",
+      "updated_at": "2026-02-17T04:42:27.227Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "412002bb-a5e3-4225-b354-d7df44535476",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "How are placements at NIAT? What companies come for hiring?",
+      "slug": "how-are-placements-at-niat-what-companies-come-for-hiring",
+      "body": "",
+      "category": "Placements & Career",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": true,
+      "faq_order": 6,
+      "created_at": "2026-02-17T04:42:27.253Z",
+      "updated_at": "2026-02-17T04:42:27.253Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "4141b1d8-c444-4f7d-a0b4-ee89acc8c215",
+    "fields": {
+      "author": [
+        "gopal"
+      ],
+      "title": "what is fee structure in niat ??",
+      "slug": "what-is-fee-structure-in-niat",
+      "body": "",
+      "category": "Scholarships & Fee",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": false,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 14,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-18T05:36:46.192Z",
+      "updated_at": "2026-02-18T05:36:46.192Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "4d9506c2-5c91-4eb4-94e2-28801deb3241",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Does NIAT give a degree? Will it be valid for government jobs or higher studies abroad?",
+      "slug": "does-niat-give-a-degree-will-it-be-valid-for-government-jobs-or-higher-studies-abroad",
+      "body": "",
+      "category": "Faculty & Academics",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": true,
+      "faq_order": 2,
+      "created_at": "2026-02-17T04:42:27.164Z",
+      "updated_at": "2026-02-17T04:42:27.164Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "4f3d6a46-3ce3-4df9-aae6-1e636c20fad8",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What exactly is NIAT and who runs it?",
+      "slug": "what-exactly-is-niat-and-who-runs-it",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 2,
+      "is_faq": true,
+      "faq_order": 1,
+      "created_at": "2026-02-17T04:42:27.153Z",
+      "updated_at": "2026-02-17T04:42:27.153Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "68b5dead-6ca4-4989-87c6-5851dc54323b",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Who are the mentors and faculty at NIAT?",
+      "slug": "who-are-the-mentors-and-faculty-at-niat",
+      "body": "",
+      "category": "Faculty & Academics",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.295Z",
+      "updated_at": "2026-02-17T04:42:27.295Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "6ad78122-ed22-46cf-bcaa-5388401c42da",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Is the NIAT campus safe? What about safety for female students?",
+      "slug": "is-the-niat-campus-safe-what-about-safety-for-female-students",
+      "body": "",
+      "category": "Campus Life",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.320Z",
+      "updated_at": "2026-02-17T04:42:27.320Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "6fb7d41f-f4ae-435b-88b6-b426cb3c943d",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "How many holidays and breaks do students get at NIAT?",
+      "slug": "how-many-holidays-and-breaks-do-students-get-at-niat",
+      "body": "",
+      "category": "Campus Life",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.328Z",
+      "updated_at": "2026-02-17T04:42:27.328Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "7532bfc4-9d8a-403f-bfd5-52ab8eacd362",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What specializations can I choose in the B.Tech program?",
+      "slug": "what-specializations-can-i-choose-in-the-btech-program",
+      "body": "",
+      "category": "Faculty & Academics",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": true,
+      "faq_order": 7,
+      "created_at": "2026-02-17T04:42:27.278Z",
+      "updated_at": "2026-02-17T04:42:27.278Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "84a20486-f077-4fc6-9d02-1a806477981c",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What is the NAT exam and how should I prepare for it?",
+      "slug": "what-is-the-nat-exam-and-how-should-i-prepare-for-it",
+      "body": "",
+      "category": "Exam & Syllabus",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.200Z",
+      "updated_at": "2026-02-17T04:42:27.200Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "8f67956a-7d71-4439-890f-481aef275852",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Are there scholarships available at NIAT?",
+      "slug": "are-there-scholarships-available-at-niat",
+      "body": "",
+      "category": "Scholarships & Fee",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": true,
+      "faq_order": 5,
+      "created_at": "2026-02-17T04:42:27.235Z",
+      "updated_at": "2026-02-17T04:42:27.235Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "90e4b516-0bfe-4b1d-bb16-0bbb88198335",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Is NIAT recognized by NASSCOM and the government?",
+      "slug": "is-niat-recognized-by-nasscom-and-the-government",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": true,
+      "faq_order": 8,
+      "created_at": "2026-02-17T04:42:27.337Z",
+      "updated_at": "2026-02-17T04:42:27.337Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "a084fe08-44c5-4263-8f6e-5c912b221853",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Is NIAT worth it compared to a regular private engineering college?",
+      "slug": "is-niat-worth-it-compared-to-a-regular-private-engineering-college",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.346Z",
+      "updated_at": "2026-02-17T04:42:27.346Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "a0886212-8510-4632-8fe8-d72dc7549ced",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Is the learning at NIAT really practical or is it just marketing?",
+      "slug": "is-the-learning-at-niat-really-practical-or-is-it-just-marketing",
+      "body": "",
+      "category": "Exam & Syllabus",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.286Z",
+      "updated_at": "2026-02-17T04:42:27.286Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "a404fcec-0a51-4b8c-8c0f-70c7236dbeb4",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What is the eligibility criteria to apply for NIAT?",
+      "slug": "what-is-the-eligibility-criteria-to-apply-for-niat",
+      "body": "",
+      "category": "Admissions & Eligibility",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.190Z",
+      "updated_at": "2026-02-17T04:42:27.190Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "a525b15d-40b3-43a1-a190-1e7b1dce74be",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "What is the hostel fee at NIAT campuses?",
+      "slug": "what-is-the-hostel-fee-at-niat-campuses",
+      "body": "",
+      "category": "Scholarships & Fee",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 1,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.244Z",
+      "updated_at": "2026-02-17T04:42:27.244Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "c660edc0-8496-4cba-ac44-05ee58400bfd",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "How is NIAT different from a regular B.Tech college?",
+      "slug": "how-is-niat-different-from-a-regular-btech-college",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": true,
+      "faq_order": 3,
+      "created_at": "2026-02-17T04:42:27.175Z",
+      "updated_at": "2026-02-17T04:42:27.175Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "c8a3b439-1b04-48a7-9826-6d3d336d3fe2",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "In which states and cities does NIAT operate?",
+      "slug": "in-which-states-and-cities-does-niat-operate",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.183Z",
+      "updated_at": "2026-02-17T04:42:27.183Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "d3a8b8c8-60ee-4102-8dd8-0b4db1df510a",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "When can I expect to get my first internship at NIAT?",
+      "slug": "when-can-i-expect-to-get-my-first-internship-at-niat",
+      "body": "",
+      "category": "Placements & Career",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.262Z",
+      "updated_at": "2026-02-17T04:42:27.262Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "e8d2bcb0-7237-4728-8434-602fa1221edc",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "How often is the curriculum updated?",
+      "slug": "how-often-is-the-curriculum-updated",
+      "body": "",
+      "category": "Exam & Syllabus",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.303Z",
+      "updated_at": "2026-02-17T04:42:27.303Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "edd23263-7b67-47b2-be10-3cc37359f3b8",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Can I transfer out of NIAT's program to another college after the first year?",
+      "slug": "can-i-transfer-out-of-niats-program-to-another-college-after-the-first-year",
+      "body": "",
+      "category": "General",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 18,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.354Z",
+      "updated_at": "2026-02-17T04:42:27.354Z"
+    }
+  },
+  {
+    "model": "qa.question",
+    "pk": "fff534fc-af2b-42a8-8bed-8bb492d468e7",
+    "fields": {
+      "author": [
+        "niat_seed"
+      ],
+      "title": "Can I choose which city or university I want to join?",
+      "slug": "can-i-choose-which-city-or-university-i-want-to-join",
+      "body": "",
+      "category": "Admissions & Eligibility",
+      "category_confidence": 0.0,
+      "category_source": "keyword",
+      "is_answered": true,
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "view_count": 0,
+      "is_faq": false,
+      "faq_order": 0,
+      "created_at": "2026-02-17T04:42:27.218Z",
+      "updated_at": "2026-02-17T04:42:27.218Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "080e5017-eecc-4df5-b025-1209bbab6d99",
+    "fields": {
+      "question": "a084fe08-44c5-4263-8f6e-5c912b221853",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "If your goal is a software job at a good tech company, NIAT is likely the better choice over an average private engineering college with an outdated syllabus. The industry-aligned curriculum, practical projects, coding culture, and recruiter network are genuine advantages. However, if you're comparing to a top NIT, BITS, or IIT, the brand value and alumni network of those institutions still carry more weight. NIAT is strongest for students from tier-2/3 cities who want a structured, industry-ready path into tech without cracking JEE Advanced. Weigh your options based on your goals, the specific partner university, and the fee you're comfortable with.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.348Z",
+      "updated_at": "2026-02-17T04:42:27.348Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "17e70f08-772c-4559-8332-f0edf4bf0705",
+    "fields": {
+      "question": "6ad78122-ed22-46cf-bcaa-5388401c42da",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT has stated that its campuses maintain strict safety protocols. There are grievance committees and discipline committees conducting 24/7 surveillance both inside and outside the campus. Hostels are separate for boys and girls. CCTV is installed across hostels and campus areas. The campuses are located in established areas (often tech districts), which adds another layer of security. As with any institution, it's wise to visit the specific campus you're considering and speak with current students directly.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.322Z",
+      "updated_at": "2026-02-17T04:42:27.322Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "1a808f4a-b747-4206-8df8-d78a32a83411",
+    "fields": {
+      "question": "0d4a37ad-54ea-4cdd-b6f4-8a1bdb6da43c",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Campuses are modern and well-equipped. Students report wide classrooms with smartboards and high-speed Wi-Fi, well-equipped coding labs with the latest software tools, a cafeteria on the floor, indoor games, and clean washrooms. Because NIAT operates inside partner university campuses, you also have access to the university's library, sports complex, and other facilities. One thing to note: some campuses are located in tech parks or financial districts surrounded by tech companies, which means less open outdoor space compared to a traditional sprawling college campus.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.314Z",
+      "updated_at": "2026-02-17T04:42:27.314Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "275f0ef8-c8a6-477e-b885-ae09b98f4d83",
+    "fields": {
+      "question": "84a20486-f077-4fc6-9d02-1a806477981c",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NAT (NxtWave Assessment Test) is NIAT's entrance exam. It has 81 questions across three sections: Psychometric Tests (your personality and mindset), Critical Thinking (logic and reasoning), and Mathematics (Class 10–12 level). There's no negative marking as far as students have reported. You don't need to know programming to crack it. Focus on logical reasoning, basic maths, and be honest in the psychometric section — it's assessing your learning aptitude and attitude, not just scores. After clearing NAT, you'll have a one-on-one counselling session where the team recommends a university that fits your preferences and goals.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.203Z",
+      "updated_at": "2026-02-17T04:42:27.203Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "2d1e629f-131f-4ada-a5f7-eb505202ed67",
+    "fields": {
+      "question": "323982ca-fcd8-4021-85b6-86d36a75a03c",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "No, clearing NAT is not a guarantee of admission. The final admission is solely at the discretion of the partner university, following UGC and AICTE norms. NIAT's counselling team recommends a university based on your score and preferences, but the university makes the final call. Make sure you meet the university's own eligibility criteria and submit all required documents on time.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.212Z",
+      "updated_at": "2026-02-17T04:42:27.212Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "3a8769e2-2c65-4dff-acd9-1fe66c3af020",
+    "fields": {
+      "question": "3fd06a78-2a52-4d29-a538-f9773d5ba6c2",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "The fees vary by location and partner university. Here's a rough breakdown based on what's publicly available: Hyderabad campuses range between ₹12–16 lakhs total for 4 years. Bangalore is around ₹14 lakhs total (approximately ₹3.5 lakhs/year). Vijayawada is on the lower end at around ₹10 lakhs total (approximately ₹2.5 lakhs/year). Tamil Nadu and Pune are in the ₹12–14 lakh range. These figures include tuition and course fees — confirm the exact breakdown including hostel, transport, and exam fees during your counselling session, as they can add up.",
+      "upvote_count": 1,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.230Z",
+      "updated_at": "2026-02-17T04:42:27.230Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "3fa7ae17-42ae-4c6e-92d6-424e20296187",
+    "fields": {
+      "question": "68b5dead-6ca4-4989-87c6-5851dc54323b",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT's world-class mentors are industry professionals from companies like Microsoft, Google, Amazon, and IITs. The institute also hosts masterclasses by CEOs and CXOs from leading companies. For the academic side, faculty at the partner universities handle your university coursework. The blend means you get industry-relevant training from practitioners alongside formal academic instruction. Students generally rate the mentors highly for being approachable and focused on real-world skills.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.297Z",
+      "updated_at": "2026-02-17T04:42:27.297Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "459460a5-2d50-4ff7-814f-f54610cb807a",
+    "fields": {
+      "question": "e8d2bcb0-7237-4728-8434-602fa1221edc",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT claims to update its skill map every semester based on continuous feedback from 3,000+ companies and students. This is one of their core differentiators — they call it India's first \"real-time adaptive curriculum.\" In practice, this means new tools, languages, and frameworks that become industry-relevant get incorporated into what you learn. This is significantly better than traditional colleges where the syllabus can be 5–10 years outdated.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.306Z",
+      "updated_at": "2026-02-17T04:42:27.306Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "4d1d31a1-b02b-45d3-9de1-988e6f6ad000",
+    "fields": {
+      "question": "fff534fc-af2b-42a8-8bed-8bb492d468e7",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "You can express your preferences during the one-on-one counselling session after your NAT. The NIAT team will recommend a university from among their partner institutions based on your score, preferences, and seat availability. You can communicate your city preference, but the final allocation depends on seats and fit. It's a good idea to research the specific partner universities in your preferred city before your counselling session so you can ask informed questions.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.220Z",
+      "updated_at": "2026-02-17T04:42:27.220Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "4ea24932-a12a-4e8c-8be2-7cbfcf867d01",
+    "fields": {
+      "question": "7532bfc4-9d8a-403f-bfd5-52ab8eacd362",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT offers B.Tech in Computer Science Engineering (CSE) with three main specialization tracks: Artificial Intelligence (AI), Machine Learning (ML), and Data Science. Some campuses also offer Full Stack Development as a track. The core curriculum covers programming fundamentals, MERN stack development, core CS concepts, and then goes deep into your chosen specialization. The curriculum is updated every semester based on industry feedback, so what you learn stays relevant.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.281Z",
+      "updated_at": "2026-02-17T04:42:27.281Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "5033246d-3d6e-4dd3-8f0e-a808f9532258",
+    "fields": {
+      "question": "a0886212-8510-4632-8fe8-d72dc7549ced",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "From what multiple students consistently report, the practical focus is genuine. Classes are structured around real-world projects, coding exercises, and hackathons rather than theory lectures. You start coding real projects from day one. The campus doesn't feel like a traditional college classroom — students often describe it as a \"work environment.\" You'll also have Industry 5.0 clubs for AI, Robotics, Drones, and Autonomous Vehicles. That said, the quality of your experience will depend significantly on your own initiative and the specific mentors at your campus.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.289Z",
+      "updated_at": "2026-02-17T04:42:27.289Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "541480c0-eb25-41d3-b3c1-0b43c87bdb55",
+    "fields": {
+      "question": "160c066e-d628-46b9-a240-289f1a7f7558",
+      "author": [
+        "gopalreddyanthapu007"
+      ],
+      "body": "Worth it Bro.",
+      "upvote_count": 1,
+      "downvote_count": 0,
+      "created_at": "2026-02-19T10:46:38.912Z",
+      "updated_at": "2026-02-19T10:46:38.912Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "6a3d1e58-eea7-469f-807e-5a0adce38ce7",
+    "fields": {
+      "question": "edd23263-7b67-47b2-be10-3cc37359f3b8",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Technically, since your admission is with the partner university (not NIAT directly), any transfer would follow that university's policies and UGC regulations for lateral transfers. NIAT's upskilling program is embedded into the B.Tech curriculum, so transferring to a college without that program means you'd lose access to NIAT's resources. It's not impossible, but it's complicated. Think carefully before joining rather than banking on a transfer later.",
+      "upvote_count": 1,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.356Z",
+      "updated_at": "2026-02-17T04:42:27.356Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "781425a3-304c-4cc3-9153-2bc23ef971e4",
+    "fields": {
+      "question": "412002bb-a5e3-4225-b354-d7df44535476",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT has a network of 3,000+ companies — ranging from fast-growing startups to Fortune 500 giants. Companies in their recruiter network include Amazon, Microsoft, Google, Accenture, Infosys, TCS, Deloitte, Wipro, Capgemini, Goldman Sachs, Oracle, Cognizant, HDFC Bank, and Samsung, among many others. That said, since NIAT was founded in 2023, detailed placement statistics for graduating batches are still emerging. The institute is transparent about this — their website states that \"enrollment in NIAT itself does not assure a job or internship\" and placement outcomes depend heavily on your own skills and effort. Students report getting paid internships by their second year, which is a positive signal.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.257Z",
+      "updated_at": "2026-02-17T04:42:27.257Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "a44d446a-37de-460c-83de-59ef7759ce5c",
+    "fields": {
+      "question": "4f3d6a46-3ce3-4df9-aae6-1e636c20fad8",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "NIAT stands for NxtWave Institute of Advanced Technologies. It's an initiative by NxtWave, founded by alumni of IIT Bombay, IIT Kharagpur, and IIIT Hyderabad — specifically Sashank Gujjula, Anupam Pedarla, and Rahul Attuluri. NIAT isn't a university itself — instead, it designs an industry-ready upskilling curriculum that runs inside UGC-recognised and AICTE-approved partner universities. So you get a valid B.Tech degree from the university, but your actual learning is powered by NIAT's curriculum and mentors. Think of NIAT as the \"engine\" and the university as the \"car.\"",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.157Z",
+      "updated_at": "2026-02-17T04:42:27.157Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "a617baec-6901-4dad-b348-3281e02b26c5",
+    "fields": {
+      "question": "6fb7d41f-f4ae-435b-88b6-b426cb3c943d",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "This is one point where students have flagged a drawback — NIAT has fewer holidays compared to traditional colleges. The program is intensive and keeps students occupied throughout the year. If you're someone who values long semester breaks, NIAT's schedule may feel demanding. The trade-off is that the focused learning environment builds skills faster. Plan your personal time and family visits accordingly.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.331Z",
+      "updated_at": "2026-02-17T04:42:27.331Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "b688b675-ee8a-4a8e-ba89-d3fdfb9d2490",
+    "fields": {
+      "question": "c8a3b439-1b04-48a7-9826-6d3d336d3fe2",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "As of 2025, NIAT has a presence across 8 states: Telangana, Andhra Pradesh, Tamil Nadu, Karnataka, Maharashtra, Rajasthan, Delhi NCR, and Uttar Pradesh. Cities include Hyderabad, Bangalore, Chennai, Pune, Vijayawada, Guntur, Greater Noida, and more. Each city has one or more partner universities. During the counselling process, you'll be recommended a university based on your NAT score, preferences, and seat availability.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.185Z",
+      "updated_at": "2026-02-17T04:42:27.185Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "c1e4775a-158e-458d-bf8b-d55f354ec2ac",
+    "fields": {
+      "question": "90e4b516-0bfe-4b1d-bb16-0bbb88198335",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Yes. NIAT is recognized by NASSCOM (National Association of Software and Service Companies), the National Skill Development Corporation (NSDC), and Startup India. The founders were featured in Forbes India 30 Under 30 in 2024. NIAT has also signed an MoU with AICTE to offer courses on the NEAT platform, signed an MoU with NSDC for the SkillUp India 4.0 initiative, and their CEO was invited to the World Economic Forum's Annual Meeting 2025. These are strong credibility signals for an institute founded in 2023.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.340Z",
+      "updated_at": "2026-02-17T04:42:27.340Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "c5616951-787f-476b-922c-5c3c588b99a9",
+    "fields": {
+      "question": "a525b15d-40b3-43a1-a190-1e7b1dce74be",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Hostel facilities are typically provided through private hostels partnered with the university, not directly by NIAT. At the Tamil Nadu campus, for example: a 4-occupancy room costs ₹10,500/month, ₹60,000 for 6 months, or ₹1,08,000 for a year. A 2-occupancy room costs ₹12,500/month, ₹70,000 for 6 months, or ₹1,30,000 for a year. Hostels generally include 24/7 Wi-Fi, CCTV, meals, and some have AC options and gyms. Fees will differ by campus, so ask specifically during counselling.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.247Z",
+      "updated_at": "2026-02-17T04:42:27.247Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "cab27576-6888-47ba-b9b4-dd53eaa7d1fc",
+    "fields": {
+      "question": "c660edc0-8496-4cba-ac44-05ee58400bfd",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "The biggest difference is the curriculum approach. Regular engineering colleges still run theory-heavy syllabi that haven't kept up with the industry. NIAT's skill map is built from feedback from 3,000+ companies and is updated every semester. From day one, you're writing code, building projects, and participating in hackathons — not sitting through long theory lectures. You also get mentors from companies like Microsoft, Google, and Amazon, plus masterclasses from CEOs and CXOs. That said, the on-campus experience (hostel, college culture, sports) still depends on which partner university you're assigned to.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.177Z",
+      "updated_at": "2026-02-17T04:42:27.177Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "df399abb-881f-4f60-ac70-3be11ba3afbe",
+    "fields": {
+      "question": "4d9506c2-5c91-4eb4-94e2-28801deb3241",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Yes, but the degree is awarded by the partner university, not NIAT itself. NIAT explicitly states it is not a university and does not award degrees on its own. The B.Tech you receive is from the collaborating UGC-recognised or AICTE-approved university, which makes it fully valid for government jobs and higher studies abroad. Always double-check which specific university you're being admitted to and confirm their accreditation before joining.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.168Z",
+      "updated_at": "2026-02-17T04:42:27.168Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "e44a2cdf-406f-4020-885f-35c3b414b063",
+    "fields": {
+      "question": "074eec84-6da3-4ea2-892a-3ecb9865e62c",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "No, NIAT does not guarantee placement. They clearly state this on their official website. What they offer is placement support — a strong recruiter network, career guidance, interview preparation, and a placement team that actively connects students with companies. Your placement outcome ultimately depends on the skills you build, your consistency, and your performance in interviews. Think of NIAT as giving you the best runway — you still have to take off yourself.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.273Z",
+      "updated_at": "2026-02-17T04:42:27.273Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "e706733c-6fca-49f5-bab5-17e7c57d9ebd",
+    "fields": {
+      "question": "a404fcec-0a51-4b8c-8c0f-70c7236dbeb4",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "You need to have completed Class 12 (or be currently appearing) with Physics, Chemistry, and Mathematics as core subjects and a minimum of 50% aggregate marks. After that, you take the NxtWave Assessment Test (NAT). Students with 85%+ aggregate in Class 12 can directly qualify the primary round. The NAT is an online exam of 90 minutes with 81 questions covering Psychometric Tests, Critical Thinking, and Mathematics — it's testing your potential, not your existing coding knowledge. A one-on-one counselling session follows the test.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.193Z",
+      "updated_at": "2026-02-17T04:42:27.193Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "eacda98f-7661-4e6b-8ea6-e7ee930f0231",
+    "fields": {
+      "question": "d3a8b8c8-60ee-4102-8dd8-0b4db1df510a",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Based on what current students share, many are landing paid internships by their 1st or 2nd year. NIAT's curriculum is structured so you're building real-world projects from semester one, which makes your profile strong early on. NIAT provides mock interviews, Problem of the Day (POTD), mock test series, and dedicated placement prep. The goal the NIAT team sets for students is to crack a tech internship within 1–2 years of joining. That's realistic if you stay consistent with the coding practice and project work.",
+      "upvote_count": 0,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.264Z",
+      "updated_at": "2026-02-17T04:42:27.264Z"
+    }
+  },
+  {
+    "model": "qa.answer",
+    "pk": "f55ea1c4-c852-4e98-adb9-db31fd439781",
+    "fields": {
+      "question": "8f67956a-7d71-4439-890f-481aef275852",
+      "author": [
+        "niat_seed"
+      ],
+      "body": "Yes. NIAT offers merit-based scholarships, including up to 100% scholarship for the first year based on academic performance and NAT scores. If you have a strong Class 12 record and perform well in the NAT, you have a real shot at a scholarship. Details are discussed during the counselling session. Don't assume the scholarship will continue automatically — ask specifically about renewal criteria for subsequent years.",
+      "upvote_count": 1,
+      "downvote_count": 0,
+      "created_at": "2026-02-17T04:42:27.238Z",
+      "updated_at": "2026-02-17T04:42:27.238Z"
+    }
+  },
+  {
+    "model": "qa.answervote",
+    "pk": 1,
+    "fields": {
+      "answer": "6a3d1e58-eea7-469f-807e-5a0adce38ce7",
+      "user": [
+        "gopal"
+      ],
+      "value": 1
+    }
+  },
+  {
+    "model": "qa.answervote",
+    "pk": 5,
+    "fields": {
+      "answer": "3a8769e2-2c65-4dff-acd9-1fe66c3af020",
+      "user": [
+        "gopal"
+      ],
+      "value": 1
+    }
+  },
+  {
+    "model": "qa.answervote",
+    "pk": 6,
+    "fields": {
+      "answer": "f55ea1c4-c852-4e98-adb9-db31fd439781",
+      "user": [
+        "gopal"
+      ],
+      "value": 1
+    }
+  },
+  {
+    "model": "qa.answervote",
+    "pk": 11,
+    "fields": {
+      "answer": "541480c0-eb25-41d3-b3c1-0b43c87bdb55",
+      "user": [
+        "gopalreddyanthapu007"
+      ],
+      "value": 1
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "1effdfe3-0281-4c17-bc05-a04f5807af6c",
+    "fields": {
+      "code": "comment_reply",
+      "name": "Comment Reply",
+      "description": "Someone replied to your comment",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-11T13:18:40.427Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "44415894-2d65-4e06-942e-6b56a5780c8c",
+    "fields": {
+      "code": "post_downvote",
+      "name": "Post Downvote",
+      "description": "Someone downvoted your post",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-11T13:18:40.417Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "4b28faa4-16e9-4f61-870c-0de2c27e0a64",
+    "fields": {
+      "code": "post_upvote",
+      "name": "Post Upvote",
+      "description": "Someone upvoted your post",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-11T13:18:40.412Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "5496db19-c613-44b5-8195-236d49cd75d2",
+    "fields": {
+      "code": "qa_answer",
+      "name": "Your question was answered",
+      "description": "A verified senior answered your question",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-19T07:06:37.630Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "76a78d60-9ad7-445d-add8-dd7f16d9c0fa",
+    "fields": {
+      "code": "post_comment",
+      "name": "Post Comment",
+      "description": "Someone commented on your post",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-11T13:18:40.421Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "90a6d22a-c9dd-476e-9cfd-e46e3d35c415",
+    "fields": {
+      "code": "comment_upvote",
+      "name": "Comment Upvote",
+      "description": "Someone upvoted your comment",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-11T13:18:40.424Z"
+    }
+  },
+  {
+    "model": "notifications.notificationtype",
+    "pk": "a6df8e06-ca62-499f-82c5-ea97bbe0a628",
+    "fields": {
+      "code": "qa_question_asked",
+      "name": "New question from student",
+      "description": "A prospective student asked a question you can answer",
+      "email_template": "",
+      "push_template": "",
+      "created_at": "2026-02-19T07:06:37.626Z"
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": "2d00aead-cb85-41d9-9eef-c5fc06f3ed7c",
+    "fields": {
+      "recipient": [
+        "gopal"
+      ],
+      "actor": [
+        "gopalreddyanthapu007"
+      ],
+      "verb": "answered your question",
+      "notification_type": "5496db19-c613-44b5-8195-236d49cd75d2",
+      "content_type": [
+        "qa",
+        "question"
+      ],
+      "object_id": "160c066e-d628-46b9-a240-289f1a7f7558",
+      "read_at": "2026-02-20T04:52:42.598Z",
+      "created_at": "2026-02-19T10:46:38.924Z"
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": "2f3244a5-09d1-49b0-afe0-3449545b2fc4",
+    "fields": {
+      "recipient": [
+        "niat_seed"
+      ],
+      "actor": [
+        "gopal"
+      ],
+      "verb": "asked a question",
+      "notification_type": "a6df8e06-ca62-499f-82c5-ea97bbe0a628",
+      "content_type": [
+        "qa",
+        "question"
+      ],
+      "object_id": "10c430b5-4017-4c35-aafd-6b77248a4cd5",
+      "read_at": null,
+      "created_at": "2026-02-20T04:33:56.522Z"
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": "6a20bd42-318e-45a4-aff4-e1a67862c00b",
+    "fields": {
+      "recipient": [
+        "gopalreddyanthapu007"
+      ],
+      "actor": [
+        "gopal"
+      ],
+      "verb": "asked a question",
+      "notification_type": "a6df8e06-ca62-499f-82c5-ea97bbe0a628",
+      "content_type": [
+        "qa",
+        "question"
+      ],
+      "object_id": "10c430b5-4017-4c35-aafd-6b77248a4cd5",
+      "read_at": null,
+      "created_at": "2026-02-20T04:33:56.534Z"
+    }
+  },
+  {
+    "model": "notifications.notification",
+    "pk": "80db2eb7-66be-4626-aec3-21b37335e635",
+    "fields": {
+      "recipient": [
+        "niat_seed"
+      ],
+      "actor": [
+        "gopal"
+      ],
+      "verb": "asked a question",
+      "notification_type": "a6df8e06-ca62-499f-82c5-ea97bbe0a628",
+      "content_type": [
+        "qa",
+        "question"
+      ],
+      "object_id": "160c066e-d628-46b9-a240-289f1a7f7558",
+      "read_at": null,
+      "created_at": "2026-02-19T07:12:25.442Z"
+    }
+  },
+  {
+    "model": "reviews.senioronboardingreview",
+    "pk": "e4a24cbe-d69f-461c-812d-05047ac00af6",
+    "fields": {
+      "user": [
+        "gopalreddyanthapu007"
+      ],
+      "teaching_quality": 5,
+      "faculty_support_text": "Hands-on learning & projects",
+      "faculty_support_choice": "very_helpful",
+      "projects_quality": 5,
+      "best_project_or_skill": "Hands-on learning & projects",
+      "learning_balance_choice": "practical_focused",
+      "placement_support": 5,
+      "job_ready_text": "Nice Bro, Worth it Haa",
+      "placement_reality_choice": "very_promising",
+      "overall_satisfaction": 5,
+      "one_line_experience": "Vere Level and Yes good",
+      "experience_feel_choice": "positive",
+      "recommendation_score": 5,
+      "who_should_join_text": "student who might be having mad",
+      "final_recommendation_choice": "yes_definitely",
+      "linkedin_profile_url": "https://linkedin.com/in/gopal",
+      "created_at": "2026-02-19T10:36:13.812Z",
+      "updated_at": "2026-02-19T10:36:13.812Z"
+    }
+  }
+]

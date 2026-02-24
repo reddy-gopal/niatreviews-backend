@@ -61,10 +61,10 @@ def _answers_prefetch():
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.select_related("author").order_by("-created_at")
+    queryset = Question.objects.select_related("author").order_by("-created_at", "id")
     lookup_field = "slug"
     lookup_url_kwarg = "slug"
-    pagination_class = QuestionCursorPagination
+    pagination_class = QuestionCursorPagination  # list: cursor-paginated, returns only questions (next/previous/results)
     permission_classes = [IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
     def get_permissions(self):

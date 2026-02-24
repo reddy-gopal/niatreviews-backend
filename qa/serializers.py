@@ -83,6 +83,8 @@ class QuestionListSerializer(serializers.ModelSerializer):
     user_vote = serializers.SerializerMethodField()
     answer = serializers.SerializerMethodField()
     answer_count = serializers.SerializerMethodField()
+    headline = serializers.CharField(read_only=True, default=None)
+    title_headline = serializers.CharField(read_only=True, default=None)
 
     class Meta:
         model = Question
@@ -101,6 +103,8 @@ class QuestionListSerializer(serializers.ModelSerializer):
             "answer_count",
             "user_vote",
             "answer",
+            "headline",
+            "title_headline",
         ]
 
     def get_author(self, obj):

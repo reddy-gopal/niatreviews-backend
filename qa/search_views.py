@@ -31,6 +31,12 @@ def search_questions_view(request):
     """GET /api/questions/search/?q=...&order_by=-rank|-created_at|-upvote_count"""
     q = request.query_params.get("q", "").strip()
     order_by = request.query_params.get("order_by", "-rank")
+    if not q:
+        return Response({
+            "next": None,
+            "previous": None,
+            "results": [],
+        })
     qs = search_questions(q, order_by=order_by)
     qs = _annotate_user_vote(qs, request.user)
     paginator = QuestionSearchPagination()
@@ -47,6 +53,8 @@ def search_questions_view(request):
 def search_suggestions_view(request):
     """GET /api/questions/search/suggestions/?q=..."""
     q = request.query_params.get("q", "").strip()
+    if not q:
+        return Response([])
     limit = min(20, int(request.query_params.get("limit", 10)))
     qs = suggestion_questions(q, limit=limit)
     qs = _annotate_user_vote(qs, request.user)

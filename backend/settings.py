@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load .env early so DATABASE_URL is available for DATABASES below
+from dotenv import load_dotenv
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -107,13 +112,34 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Set DATABASE_URL in .env for PostgreSQL (e.g. Neon); otherwise uses SQLite.
+_database_url = os.environ.get("DATABASE_URL", "").strip()
+if _database_url and _database_url.startswith("postgres"):
+    # Normalize postgres:// to postgresql:// for psycopg
+    if _database_url.startswith("postgres://"):
+        _database_url = "postgresql://" + _database_url.split("://", 1)[1]
+    from urllib.parse import urlparse
+    _p = urlparse(_database_url)
+    _db_name = (_p.path or "/neondb").lstrip("/") or "neondb"
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": _db_name,
+            "USER": _p.username,
+            "PASSWORD": _p.password,
+            "HOST": _p.hostname,
+            "PORT": _p.port or 5432,
+            "CONN_MAX_AGE": 600,
+            "OPTIONS": {"sslmode": "require"},
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 
 # Password validation

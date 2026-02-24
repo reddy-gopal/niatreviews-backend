@@ -3,110 +3,11 @@ NIAT Q&A app.
 Prospective students ask questions; verified seniors can each give one answer per question (multiple answers per question).
 Anyone can upvote/downvote questions and answers.
 """
-import re
 import uuid
-import logging
 from django.conf import settings
-from django.db import models, connection
-
-logger = logging.getLogger(__name__)
-
-# FTS5 virtual table name (must match migration).
-# To inspect: Django shell: from django.db import connection; c = connection.cursor(); c.execute("SELECT rowid, title FROM qa_question_search LIMIT 5"); c.fetchall()
-# Or: sqlite3 db.sqlite3 then ".tables" and "SELECT * FROM qa_question_search LIMIT 5"
-FTS_QUESTION_SEARCH_TABLE = "qa_question_search"
-QUESTION_TABLE = "qa_question"
-
-
-# Common words to exclude from AND-query so we require substantive terms (e.g. "niat", "job", "scholarships").
-# Includes question verbs that often don't appear in stored titles ("Does NIAT provide X?" vs "Are there X at NIAT?").
-# If the user query becomes empty after stripping these, we fall back to using all tokens.
-FTS5_STOPWORDS = frozenset({
-    "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-    "have", "has", "had", "do", "does", "did", "will", "would", "can", "could",
-    "me", "my", "i", "you", "we", "they", "it", "its", "this", "that",
-    "to", "into", "for", "of", "in", "on", "at", "by", "with", "out", "from",
-    "how", "what", "when", "where", "why", "which", "who", "and", "or", "but",
-    "get", "got", "if", "so", "as", "than", "then", "just", "really",
-    # Question-style verbs that may not appear in the stored question text:
-    "provide", "provides", "provided", "providing", "offer", "offers", "offered", "offering",
-    "give", "gives", "gave", "given", "giving", "help", "helps", "helped", "helping",
-})
-
-# Max terms in AND query so we don't require 10 words (e.g. "how can niat seniors help me get into job" -> cap at 5).
-FTS5_MAX_AND_TERMS = 6
-
-
-def build_fts5_query(user_phrase: str) -> str:
-    """
-    Build a safe FTS5 MATCH query from user input with prefix matching.
-    - Lowercases and strips input; removes punctuation/special chars so contractions don't break matching.
-    - Tokenizes, drops stopwords, then turns each remaining token into a prefix term (token*).
-    - Prefix terms match singular/plural and variations (e.g. placement* matches "placement", "placements").
-    - Terms are combined with AND. Returns empty string if no tokens (caller returns no results).
-    """
-    if not user_phrase or not isinstance(user_phrase, str):
-        return ""
-    # Normalize: lowercase, strip, length cap
-    s = user_phrase.strip()[:500].lower()
-    if not s:
-        return ""
-    # Remove punctuation and special characters so contractions and punctuation do not break token matching
-    s = re.sub(r"[^\w\s]", " ", s, flags=re.UNICODE)
-    tokens = [t for t in s.split() if t]
-    if not tokens:
-        return ""
-    # Remove stopwords
-    meaningful = [t for t in tokens if t not in FTS5_STOPWORDS]
-    terms = meaningful if meaningful else tokens
-    terms = terms[:FTS5_MAX_AND_TERMS]
-    # Build prefix MATCH: each term becomes "term"* so FTS5 matches any token starting with that term
-    escaped = [t.replace('"', '""') for t in terms]
-    return " AND ".join(f'"{t}"*' for t in escaped)
-
-
-class QuestionQuerySet(models.QuerySet):
-    """QuerySet with FTS5 full-text search for SQLite."""
-
-    def full_text_search(self, phrase):
-        """
-        Return questions matching the FTS5 phrase (SQLite only).
-        Uses prefix-based MATCH (e.g. "niat"* AND "placement"*) for pluralization-tolerant search.
-        Query is built by build_fts5_query(); parameter substitution prevents SQL injection.
-        """
-        if not phrase or not isinstance(phrase, str):
-            return self.none()
-        phrase = phrase.strip()
-        if not phrase:
-            return self.none()
-        if connection.vendor != "sqlite":
-            return self.none()
-        fts_query = build_fts5_query(phrase)
-        if not fts_query:
-            return self.none()
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    f"SELECT id FROM {QUESTION_TABLE} WHERE rowid IN ("
-                    f"SELECT rowid FROM {FTS_QUESTION_SEARCH_TABLE} WHERE {FTS_QUESTION_SEARCH_TABLE} MATCH %s)",
-                    [fts_query],
-                )
-                ids = [row[0] for row in cursor.fetchall()]
-        except Exception as e:
-            logger.warning("FTS5 search failed: %s", e)
-            return self.none()
-        if not ids:
-            return self.none()
-        return self.filter(id__in=ids)
-
-
-class QuestionManager(models.Manager):
-    def get_queryset(self):
-        return QuestionQuerySet(self.model, using=self._db)
-
-    def search(self, q):
-        """Return queryset of questions matching full-text phrase q (SQLite FTS5)."""
-        return self.get_queryset().full_text_search(q)
+from django.db import models
+from django.contrib.postgres.search import SearchVectorField
+from django.contrib.postgres.indexes import GinIndex
 
 
 class Question(models.Model):
@@ -131,14 +32,15 @@ class Question(models.Model):
     faq_order = models.IntegerField(default=0, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    objects = QuestionManager()
+    search_vector = SearchVectorField(null=True, blank=True)
 
     class Meta:
         db_table = "qa_question"
         ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["is_faq", "faq_order"]),
+            GinIndex(fields=["search_vector"], name="question_search_vector_gin_idx"),
+            GinIndex(fields=["title"], name="question_title_trgm_idx", opclasses=["gin_trgm_ops"]),
         ]
 
     def save(self, *args, **kwargs):
