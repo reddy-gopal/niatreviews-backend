@@ -1,0 +1,613 @@
+[
+{
+  "model": "campuses.campus",
+  "pk": 1,
+  "fields": {
+    "name": "Sushant University",
+    "short_name": "Sushant",
+    "location": "Gurgaon",
+    "state": "Haryana",
+    "image_url": "https://framerusercontent.com/images/HGpTIuSSGmP7aDusPo8tdGRqLC8.png",
+    "slug": "niat-sushant-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.783Z",
+    "updated_at": "2026-03-03T15:01:23.783Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 2,
+  "fields": {
+    "name": "Chaitanya Deemed to be University",
+    "short_name": "Chaitanya",
+    "location": "Hyderabad",
+    "state": "Telangana",
+    "image_url": "https://framerusercontent.com/images/ULono8yMkd2GZtFh5JjEPH64A.jpg",
+    "slug": "niat-chaitanya-university",
+    "is_deemed": true,
+    "created_at": "2026-03-03T15:01:23.792Z",
+    "updated_at": "2026-03-03T15:01:23.792Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 3,
+  "fields": {
+    "name": "S-VYASA University School of Advanced Studies",
+    "short_name": "S-VYASA",
+    "location": "Bengaluru",
+    "state": "Karnataka",
+    "image_url": "https://framerusercontent.com/images/iorBiDrSAGPkIhSlJVUZFkcQI.jpg",
+    "slug": "niat-s-vyasa-university",
+    "is_deemed": true,
+    "created_at": "2026-03-03T15:01:23.798Z",
+    "updated_at": "2026-03-03T15:01:23.798Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 4,
+  "fields": {
+    "name": "Noida International University",
+    "short_name": "NIU",
+    "location": "Noida",
+    "state": "Uttar Pradesh",
+    "image_url": "https://framerusercontent.com/images/iciqIKyIg81iQzKb5fdeYYDY7A.jpg",
+    "slug": "niat-noida-international-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.804Z",
+    "updated_at": "2026-03-03T15:01:23.804Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 5,
+  "fields": {
+    "name": "AMET University",
+    "short_name": "AMET",
+    "location": "Chennai",
+    "state": "Tamil Nadu",
+    "image_url": "https://framerusercontent.com/images/cN3LZE0YoN2StUkQ22CGTfBl7Q.jpg",
+    "slug": "niat-amet-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.809Z",
+    "updated_at": "2026-03-03T15:01:23.809Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 6,
+  "fields": {
+    "name": "Yenepoya University",
+    "short_name": "Yenepoya",
+    "location": "Mangalore",
+    "state": "Karnataka",
+    "image_url": "https://framerusercontent.com/images/tKVIeYoI0P0n4OPmW5iomK1wA7U.webp",
+    "slug": "niat-yenepoya-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.815Z",
+    "updated_at": "2026-03-03T15:01:23.815Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 7,
+  "fields": {
+    "name": "Ajeenkya DY Patil University",
+    "short_name": "ADYPU",
+    "location": "Pune",
+    "state": "Maharashtra",
+    "image_url": "https://framerusercontent.com/images/rrWqy4ED43cM4QocQwlEBosQE.jpeg",
+    "slug": "niat-ajeenkya-dy-patil-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.820Z",
+    "updated_at": "2026-03-03T15:01:23.820Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 8,
+  "fields": {
+    "name": "Sanjay Ghodawat University",
+    "short_name": "SGU",
+    "location": "Kolhapur",
+    "state": "Maharashtra",
+    "image_url": "https://framerusercontent.com/images/3q50B22om8o7NUUizLvSwanmuk.png",
+    "slug": "niat-sanjay-ghodawat-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.824Z",
+    "updated_at": "2026-03-03T15:01:23.824Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 9,
+  "fields": {
+    "name": "Vivekananda Global University",
+    "short_name": "VGU",
+    "location": "Jaipur",
+    "state": "Rajasthan",
+    "image_url": "https://framerusercontent.com/images/kCjPLnr5YW9RR101nFkyC3pSaIQ.jpg",
+    "slug": "niat-vivekananda-global-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.828Z",
+    "updated_at": "2026-03-03T15:01:23.828Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 10,
+  "fields": {
+    "name": "NRI University",
+    "short_name": "NRI",
+    "location": "Vijayawada",
+    "state": "Andhra Pradesh",
+    "image_url": "https://framerusercontent.com/images/qrMhb0N7s9127bYZvWO2cgjkAz8.webp",
+    "slug": "niat-nri-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.832Z",
+    "updated_at": "2026-03-03T15:01:23.832Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 11,
+  "fields": {
+    "name": "St. Peter's Institute of Higher Education and Research",
+    "short_name": "SPIHER",
+    "location": "Bangalore",
+    "state": "Karnataka",
+    "image_url": "https://framerusercontent.com/images/e7oYXpGwiPUSp7kJ1lhK2xlpq70.webp",
+    "slug": "niat-spiher",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.836Z",
+    "updated_at": "2026-03-03T15:01:23.836Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 12,
+  "fields": {
+    "name": "B. S. Abdur Rahman Crescent Institute of Science & Technology",
+    "short_name": "Crescent",
+    "location": "Chennai",
+    "state": "Tamil Nadu",
+    "image_url": "https://framerusercontent.com/images/lyGh93hcRTWQPO66lHdp3ra4c.jpg",
+    "slug": "niat-bs-abdur-rahman-crescent",
+    "is_deemed": true,
+    "created_at": "2026-03-03T15:01:23.841Z",
+    "updated_at": "2026-03-03T15:01:23.841Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 13,
+  "fields": {
+    "name": "Annamacharya University",
+    "short_name": "Annamacharya",
+    "location": "Kadapa",
+    "state": "Andhra Pradesh",
+    "image_url": "https://framerusercontent.com/images/Ncf6LafzUnbz1LljcPCl1XYx9w.jpg",
+    "slug": "niat-annamacharya-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.845Z",
+    "updated_at": "2026-03-03T15:01:23.845Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 14,
+  "fields": {
+    "name": "St. Mary's University",
+    "short_name": "St. Mary's",
+    "location": "Hyderabad",
+    "state": "Telangana",
+    "image_url": "https://framerusercontent.com/images/Hy5HYIJd21W5KuSuSNi3z8kBHrQ.png",
+    "slug": "niat-st-marys-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.851Z",
+    "updated_at": "2026-03-03T15:01:23.851Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 15,
+  "fields": {
+    "name": "Sandip University",
+    "short_name": "Sandip",
+    "location": "Nashik",
+    "state": "Maharashtra",
+    "image_url": "https://framerusercontent.com/images/UlGKrLkX5zFs9zbsNJeO3hlT7s.png",
+    "slug": "niat-sandip-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.857Z",
+    "updated_at": "2026-03-03T15:01:23.857Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 16,
+  "fields": {
+    "name": "Nadimpalli Satyanarayana Raju Institute of Technology",
+    "short_name": "NSRIT",
+    "location": "Visakhapatnam",
+    "state": "Andhra Pradesh",
+    "image_url": "https://framerusercontent.com/images/SLiDsXueZRhV0ppgDtJEkdi7Fbg.jpg",
+    "slug": "niat-nsrit",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.863Z",
+    "updated_at": "2026-03-03T15:01:23.863Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 17,
+  "fields": {
+    "name": "Scope Global Skills University",
+    "short_name": "SGSU",
+    "location": "Bhopal",
+    "state": "Madhya Pradesh",
+    "image_url": "https://framerusercontent.com/images/jwQu0g5yG5fE0tCVjLDgmXEeFY.png",
+    "slug": "niat-scope-global-skills-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.868Z",
+    "updated_at": "2026-03-03T15:01:23.868Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 18,
+  "fields": {
+    "name": "Alard University",
+    "short_name": "Alard",
+    "location": "Pune",
+    "state": "Maharashtra",
+    "image_url": "https://framerusercontent.com/images/DQcP9sJHF0jhxaTxv1TEpyk9g0.webp",
+    "slug": "niat-alard-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.873Z",
+    "updated_at": "2026-03-03T15:01:23.873Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 19,
+  "fields": {
+    "name": "Joy University",
+    "short_name": "Joy",
+    "location": "Tirunelveli",
+    "state": "Tamil Nadu",
+    "image_url": "https://framerusercontent.com/images/iRZXThhVL2LY5nhy3iPbLGgcEk.webp",
+    "slug": "niat-joy-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.878Z",
+    "updated_at": "2026-03-03T15:01:23.878Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 20,
+  "fields": {
+    "name": "BEST Innovation University",
+    "short_name": "BEST",
+    "location": "Anantapur",
+    "state": "Andhra Pradesh",
+    "image_url": "https://framerusercontent.com/images/0toNpv71sfSADRLfyGUm8w2kHW0.webp",
+    "slug": "niat-best-innovation-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.883Z",
+    "updated_at": "2026-03-03T15:01:23.883Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 21,
+  "fields": {
+    "name": "Takshashila University",
+    "short_name": "Takshashila",
+    "location": "Pondicherry",
+    "state": "Tamil Nadu",
+    "image_url": "https://framerusercontent.com/images/ZcVZbx8PmDdzWPRKDsddEKUHKs.png",
+    "slug": "niat-takshashila-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.889Z",
+    "updated_at": "2026-03-03T15:01:23.889Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 23,
+  "fields": {
+    "name": "Sanskriti University",
+    "short_name": "Sanskriti",
+    "location": "Mathura",
+    "state": "Uttar Pradesh",
+    "image_url": "https://framerusercontent.com/images/FkrHCUbelmw5FBEf1sJss10Mp8.jpeg",
+    "slug": "niat-sanskriti-university",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.899Z",
+    "updated_at": "2026-03-03T15:01:23.899Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 24,
+  "fields": {
+    "name": "Chalapathi Institute of Engineering and Technology",
+    "short_name": "CIET",
+    "location": "Guntur",
+    "state": "Andhra Pradesh",
+    "image_url": "https://framerusercontent.com/images/SY74r4lGNweRx1CkeowWS7FeajI.jpg",
+    "slug": "niat-chalapathi-institute-of-engineering-and-technology",
+    "is_deemed": false,
+    "created_at": "2026-03-03T15:01:23.904Z",
+    "updated_at": "2026-03-03T15:01:23.904Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 26,
+  "fields": {
+    "name": "Malla Reddy Vishwavidyapeeth",
+    "short_name": "MRV",
+    "location": "Hyderabad",
+    "state": "Telangana",
+    "image_url": "https://framerusercontent.com/images/s77kagrrPsZfnrhDxsaXxrAsK0.png",
+    "slug": "niat-malla-reddy-vishwavidyapeeth",
+    "is_deemed": true,
+    "created_at": "2026-03-03T15:01:23.914Z",
+    "updated_at": "2026-03-03T15:01:23.914Z"
+  }
+},
+{
+  "model": "campuses.campus",
+  "pk": 27,
+  "fields": {
+    "name": "Aurora Deemed University",
+    "short_name": "Aurora",
+    "location": "Hyderabad",
+    "state": "Telangana",
+    "image_url": "https://framerusercontent.com/images/1KJ4DMV1ETo66OqZHdWL95SqoMY.jpg",
+    "slug": "niat-aurora-deemed-university-2",
+    "is_deemed": true,
+    "created_at": "2026-03-03T15:01:23.919Z",
+    "updated_at": "2026-03-03T15:01:23.919Z"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 1,
+  "fields": {
+    "name": "The Onboarding Kit",
+    "slug": "onboarding-kit"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 2,
+  "fields": {
+    "name": "Survival & Food",
+    "slug": "survival-food"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 3,
+  "fields": {
+    "name": "The Club Directory",
+    "slug": "club-directory"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 4,
+  "fields": {
+    "name": "Career & Wins",
+    "slug": "career-wins"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 5,
+  "fields": {
+    "name": "Local Travel & Hangout Spots",
+    "slug": "local-travel"
+  }
+},
+{
+  "model": "articles.category",
+  "pk": 6,
+  "fields": {
+    "name": "Amenities",
+    "slug": "amenities"
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 1,
+  "fields": {
+    "category": 3,
+    "slug": "media-club",
+    "label": "Media Club",
+    "requires_other": false,
+    "display_order": 0
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 2,
+  "fields": {
+    "category": 3,
+    "slug": "coding-club",
+    "label": "Coding Club",
+    "requires_other": false,
+    "display_order": 1
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 3,
+  "fields": {
+    "category": 3,
+    "slug": "design-club",
+    "label": "Design Club",
+    "requires_other": false,
+    "display_order": 2
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 4,
+  "fields": {
+    "category": 3,
+    "slug": "robotics-club",
+    "label": "Robotics Club",
+    "requires_other": false,
+    "display_order": 3
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 5,
+  "fields": {
+    "category": 3,
+    "slug": "sports-club",
+    "label": "Sports Club",
+    "requires_other": false,
+    "display_order": 4
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 6,
+  "fields": {
+    "category": 3,
+    "slug": "cultural-club",
+    "label": "Cultural Club",
+    "requires_other": false,
+    "display_order": 5
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 7,
+  "fields": {
+    "category": 3,
+    "slug": "others",
+    "label": "Others",
+    "requires_other": true,
+    "display_order": 6
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 8,
+  "fields": {
+    "category": 6,
+    "slug": "library",
+    "label": "Library",
+    "requires_other": false,
+    "display_order": 0
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 9,
+  "fields": {
+    "category": 6,
+    "slug": "sports-and-ground",
+    "label": "Sports and Ground",
+    "requires_other": false,
+    "display_order": 1
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 10,
+  "fields": {
+    "category": 6,
+    "slug": "cafeteria",
+    "label": "Cafeteria",
+    "requires_other": false,
+    "display_order": 2
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 11,
+  "fields": {
+    "category": 6,
+    "slug": "labs",
+    "label": "Labs",
+    "requires_other": false,
+    "display_order": 3
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 12,
+  "fields": {
+    "category": 6,
+    "slug": "hostel",
+    "label": "Hostel",
+    "requires_other": false,
+    "display_order": 4
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 13,
+  "fields": {
+    "category": 6,
+    "slug": "transport",
+    "label": "Transport",
+    "requires_other": false,
+    "display_order": 5
+  }
+},
+{
+  "model": "articles.subcategory",
+  "pk": 14,
+  "fields": {
+    "category": 6,
+    "slug": "others",
+    "label": "Others",
+    "requires_other": true,
+    "display_order": 6
+  }
+},
+{
+  "model": "articles.article",
+  "pk": 9,
+  "fields": {
+    "author_id": "4c6e4b40-57f9-4955-ac9f-cf15f9b71bb2",
+    "author_username": "gops",
+    "campus_id": 18,
+    "campus_name": "Alard University",
+    "category": "amenities",
+    "category_fk": 6,
+    "title": "jdhfjkkkdf dfkl",
+    "slug": "jdhfjkkkdf-dfkl-a1fcd8a2",
+    "excerpt": "dkjfk ddk fdfj dkf",
+    "body": "<div class=\"article-image-card\">\n  <button type=\"button\" class=\"article-image-card__remove\" data-remove-image-card aria-label=\"Remove image\">✕</button>\n  <img src=\"http://localhost:8000/media/article/images/84c1524775bd40e5a2d825cebefc91ed_ChatGPT_Image_Feb_5__2026__12_30_24_PM.png\" alt=\"\" class=\"article-image-card__img\" />\n  <div class=\"article-image-card__caption\" contenteditable=\"true\" data-placeholder=\"Add a description...\"></div>\n</div>djfk fdl dfk dc dkf dc kdk d fk fd djk fd kld vkl dk dvk dkd jf dk vdk fl fk fk lf fk lf fvk fjvjgjjgjfjgjgjgjgjgjgjgjgjgjgjgjgjgjgjgjgjgjj vjfj vjfjfoj sdfkjsd f;dflj&nbsp;",
+    "cover_image": "http://localhost:8000/media/article/images/84c1524775bd40e5a2d825cebefc91ed_ChatGPT_Image_Feb_5__2026__12_30_24_PM.png",
+    "images": [
+      "http://localhost:8000/media/article/images/84c1524775bd40e5a2d825cebefc91ed_ChatGPT_Image_Feb_5__2026__12_30_24_PM.png"
+    ],
+    "status": "pending_review",
+    "featured": false,
+    "helpful_count": 0,
+    "is_global_guide": false,
+    "topic": "",
+    "club_id": null,
+    "subcategory": "library",
+    "subcategory_other": "",
+    "rejection_reason": "",
+    "reviewed_by_id": "",
+    "reviewed_at": null,
+    "published_at": null,
+    "created_at": "2026-03-04T09:51:57.172Z",
+    "updated_at": "2026-03-04T09:51:57.172Z"
+  }
+}
+]
