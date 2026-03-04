@@ -1,17 +1,40 @@
+import re
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 
-from .serializers import ProfileSerializer, PublicProfileSerializer, SeniorsSetupSerializer
+from .models import FoundingEditorProfile
+from .serializers import (
+    ProfileSerializer,
+    PublicProfileSerializer,
+    SeniorsSetupSerializer,
+    FoundingEditorProfileSerializer,
+)
 from verification.models import MagicLoginToken
 
 User = get_user_model()
 
 
+def _get_user_by_phone(phone: str):
+    """Return user with this phone (exact or digits-only match), or None."""
+    phone = (phone or "").strip()
+    if not phone:
+        return None
+    user = User.objects.filter(phone_number=phone).first()
+    if user:
+        return user
+    digits = re.sub(r"\D", "", phone)
+    if digits:
+        return User.objects.filter(phone_number=digits).first()
+    return None
+
+
 class RegisterView(APIView):
-    """Prospective students: phone required (verified via OTP on frontend), email optional."""
+    """Prospective students: phone required (verified via OTP on frontend), email optional.
+    When source=niatverse (NIATVerse / campus app), user is created with role founding_editor."""
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -19,6 +42,7 @@ class RegisterView(APIView):
         phone = (request.data.get("phone") or "").strip()
         email = (request.data.get("email") or "").strip() or None
         password = request.data.get("password", "")
+        source = (request.data.get("source") or "").strip().lower()
         if not username or not phone or not password:
             return Response(
                 {"detail": "Username, phone and password are required."},
@@ -48,7 +72,9 @@ class RegisterView(APIView):
         user.phone_verified = True  # Frontend verified via OTP before submit
         if not email:
             user.email = None  # Keep email null when not provided
-        user.save(update_fields=["phone_number", "phone_verified", "email"])
+        if source == "niatverse":
+            user.role = "founding_editor"
+        user.save(update_fields=["phone_number", "phone_verified", "email", "role"])
         return Response(
             {"id": str(user.id), "username": user.username, "email": user.email or "", "phone": user.phone_number},
             status=status.HTTP_201_CREATED,
@@ -87,20 +113,13 @@ class MeView(APIView):
 
 
 def _verify_otp_for_phone(phone: str, code: str):
-    """Reuse verification OTP logic. Returns (True, None) if valid, (False, detail) otherwise."""
-    from django.core.cache import cache
-    from django.conf import settings
-    key = f"verification_otp:phone:{phone.strip()}"
-    demo_enabled = getattr(settings, "DEMO_OTP_ENABLED", settings.DEBUG)
-    demo_code = getattr(settings, "DEMO_OTP_CODE", "123456")
-    if demo_enabled:
-        if code == demo_code or code in ("000000",):
-            return True, key
+    """Verify OTP via MSG91. Returns (True, dummy_key) or (False, None)."""
+    from verification.msg91_client import is_configured as msg91_configured, verify_otp as msg91_verify_otp
+
+    if not msg91_configured():
         return False, None
-    stored = cache.get(key)
-    if stored and stored == code:
-        return True, key
-    return False, None
+    ok, _ = msg91_verify_otp(phone, code)
+    return (True, "ok") if ok else (False, None)
 
 
 class ForgotPasswordResetView(APIView):
@@ -148,6 +167,95 @@ class ForgotPasswordResetView(APIView):
         if cache_key:
             cache.delete(cache_key)
         return Response({"detail": "Password has been reset. You can log in now."})
+
+
+class PhoneLoginView(APIView):
+    """
+    POST /api/auth/login/phone/
+    Body: { "phone": "+91...", "code": "123456" }
+    Verifies OTP via MSG91, finds user by phone, returns JWT access and refresh.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = (request.data.get("phone") or "").strip()
+        code = (request.data.get("code") or "").strip()
+        if not phone:
+            return Response(
+                {"detail": "Phone is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not code:
+            return Response(
+                {"detail": "Verification code is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        valid, _ = _verify_otp_for_phone(phone, code)
+        if not valid:
+            return Response(
+                {"detail": "Invalid or expired code."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = _get_user_by_phone(phone)
+        if not user:
+            return Response(
+                {"detail": "No account with this phone number. Please register first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not user.is_active:
+            return Response(
+                {"detail": "This account has been deactivated."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
+
+
+class PhonePasswordLoginView(APIView):
+    """
+    POST /api/auth/login/phone-password/
+    Body: { "phone": "9876543210", "password": "..." }
+    Finds user by phone, validates password, returns JWT access and refresh.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = (request.data.get("phone") or "").strip()
+        password = request.data.get("password") or ""
+        if not phone:
+            return Response(
+                {"detail": "Mobile number is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not password:
+            return Response(
+                {"detail": "Password is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = _get_user_by_phone(phone)
+        if not user:
+            return Response(
+                {"detail": "No account with this mobile number. Please register first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not user.is_active:
+            return Response(
+                {"detail": "This account has been deactivated."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not user.check_password(password):
+            return Response(
+                {"detail": "Invalid mobile number or password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        })
 
 
 class ChangePasswordView(APIView):
@@ -205,6 +313,44 @@ class DeleteAccountView(APIView):
         user.is_active = False
         user.save(update_fields=["is_active"])
         return Response({"detail": "Your account has been deactivated."})
+
+
+class FoundingEditorProfileView(APIView):
+    """
+    GET /api/auth/me/profile/ — return current user's Founding Editor profile (college details).
+    PATCH /api/auth/me/profile/ — update profile. Only for users with role founding_editor.
+    Profile is created on first GET if missing.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def _get_or_create_profile(self, user):
+        if user.role != "founding_editor":
+            return None
+        profile, _ = FoundingEditorProfile.objects.get_or_create(user=user)
+        return profile
+
+    def get(self, request):
+        profile = self._get_or_create_profile(request.user)
+        if profile is None:
+            return Response(
+                {"detail": "Founding Editor profile is only for users with role founding_editor."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = FoundingEditorProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        profile = self._get_or_create_profile(request.user)
+        if profile is None:
+            return Response(
+                {"detail": "Founding Editor profile is only for users with role founding_editor."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        serializer = FoundingEditorProfileSerializer(profile, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data)
 
 
 class UserProfileByUsernameView(APIView):

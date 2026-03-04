@@ -1,6 +1,6 @@
 # accounts API serializers
 from rest_framework import serializers
-from .models import User
+from .models import User, FoundingEditorProfile
 
 
 def _get_senior_follower_count(user):
@@ -48,6 +48,13 @@ class PublicProfileSerializer(serializers.ModelSerializer):
 
     def get_is_followed_by_me(self, obj):
         return _get_is_followed_by_me(self.context.get("request"), obj)
+
+
+class FoundingEditorProfileSerializer(serializers.ModelSerializer):
+    """GET/PATCH current user's Founding Editor profile (campus, LinkedIn, year_joined)."""
+    class Meta:
+        model = FoundingEditorProfile
+        fields = ["linkedin_profile", "campus_id", "campus_name", "year_joined"]
 
 
 class SeniorsSetupSerializer(serializers.Serializer):

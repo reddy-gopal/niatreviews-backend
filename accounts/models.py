@@ -24,6 +24,8 @@ class User(AbstractUser):
         ("student", "Student"),
         ("senior", "Senior"),
         ("admin", "Admin"),
+        ("moderator", "Moderator"),
+        ("founding_editor", "Founding Editor"),
     ]
     role = models.CharField(
         max_length=20,
@@ -64,3 +66,35 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+
+class FoundingEditorProfile(models.Model):
+    """
+    One-to-one profile for Founding Editors (NIATVerse). Campus, LinkedIn, year joined.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="founding_editor_profile",
+        primary_key=True,
+    )
+    linkedin_profile = models.URLField(max_length=500, blank=True, help_text="LinkedIn profile URL")
+    campus_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Default campus for articles; matches campus list in frontend.",
+    )
+    campus_name = models.CharField(max_length=200, blank=True, help_text="Campus display name (e.g. from frontend list).")
+    year_joined = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Year the student joined (e.g. 2024).",
+    )
+
+    class Meta:
+        db_table = "accounts_founding_editor_profile"
+        verbose_name = "Founding Editor Profile"
+        verbose_name_plural = "Founding Editor Profiles"
+
+    def __str__(self):
+        return f"Profile of {self.user.username}"

@@ -20,11 +20,22 @@ class FollowUpSerializer(serializers.ModelSerializer):
     author = UserMiniSerializer(read_only=True)
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
+    answer_id = serializers.SerializerMethodField()
+    parent_id = serializers.SerializerMethodField()
 
     class Meta:
         model = FollowUp
-        fields = ["id", "author", "body", "created_at", "updated_at", "can_edit", "can_delete"]
+        fields = [
+            "id", "answer_id", "parent_id", "author", "body",
+            "created_at", "updated_at", "can_edit", "can_delete",
+        ]
         read_only_fields = ["id", "author", "created_at", "updated_at"]
+
+    def get_answer_id(self, obj):
+        return str(obj.answer_id) if obj.answer_id else None
+
+    def get_parent_id(self, obj):
+        return str(obj.parent_id) if obj.parent_id else None
 
     def get_can_edit(self, obj):
         user = self.context["request"].user
@@ -34,14 +45,7 @@ class FollowUpSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         if not user.is_authenticated:
             return False
-        answer_author_ids = list(
-            obj.question.answers.values_list("author_id", flat=True)
-        )
-        return (
-            user.id == obj.author_id
-            or user.id in answer_author_ids
-            or getattr(user, "is_staff", False)
-        )
+        return user.id == obj.author_id or getattr(user, "is_staff", False)
 
 
 class AnswerSerializer(serializers.ModelSerializer):

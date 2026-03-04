@@ -1,11 +1,11 @@
 """
 Verification API views.
 """
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import SeniorProfile, PhoneVerification, SeniorRegistration
-from .serializers import SeniorProfileSerializer, PhoneVerificationSerializer, SeniorRegistrationSerializer
+
+from .models import SeniorProfile, SeniorRegistration
+from .serializers import SeniorProfileSerializer, SeniorRegistrationSerializer
 from .services import send_senior_received_email, send_senior_registration_received_email
 
 
@@ -46,22 +46,6 @@ class SeniorProfileDetailAPIView(generics.RetrieveAPIView):
         Return the senior profile for the authenticated user.
         """
         return SeniorProfile.objects.get(user=self.request.user)
-
-
-class PhoneVerificationCreateAPIView(generics.CreateAPIView):
-    """
-    Create a phone verification request.
-    """
-    queryset = PhoneVerification.objects.all()
-    serializer_class = PhoneVerificationSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        """
-        Create phone verification for authenticated user.
-        """
-        serializer.save(user=self.request.user)
-
 
 
 class SeniorRegistrationCreateAPIView(generics.CreateAPIView):

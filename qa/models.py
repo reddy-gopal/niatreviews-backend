@@ -92,12 +92,28 @@ class Answer(models.Model):
 
 
 class FollowUp(models.Model):
-    """Thread-style follow-up comment under an answered question. Only question author can create."""
+    """Reddit-style thread under an answer: top-level = student follow-up (question), replies = nested."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
         related_name="followups",
+        db_index=True,
+    )
+    answer = models.ForeignKey(
+        Answer,
+        on_delete=models.CASCADE,
+        related_name="followups",
+        db_index=True,
+        null=True,
+        blank=True,
+    )
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        related_name="replies",
+        null=True,
+        blank=True,
         db_index=True,
     )
     author = models.ForeignKey(
@@ -113,7 +129,10 @@ class FollowUp(models.Model):
     class Meta:
         db_table = "qa_followup"
         ordering = ["created_at"]
-        indexes = [models.Index(fields=["question", "created_at"])]
+        indexes = [
+            models.Index(fields=["question", "created_at"]),
+            models.Index(fields=["answer", "created_at"]),
+        ]
 
     def __str__(self):
         return self.body[:50] or str(self.id)

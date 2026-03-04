@@ -6,7 +6,7 @@ from django.db.models import F
 from django.db.models.signals import post_save, pre_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
-from .models import SeniorFollow, SeniorProfile, PhoneVerification, SeniorRegistration
+from .models import SeniorFollow, SeniorProfile, SeniorRegistration
 from .services import (
     create_user_and_senior_profile_for_registration,
     send_senior_approved_email,
@@ -105,21 +105,6 @@ def handle_senior_registration_changes(sender, instance, created, **kwargs):
     except Exception as e:
         import logging
         logging.getLogger(__name__).exception("Senior registration signal failed: %s", e)
-
-
-@receiver(post_save, sender=PhoneVerification)
-def sync_phone_verified_flag(sender, instance, created, **kwargs):
-    """
-    When PhoneVerification is verified, sync user.phone_verified and user.phone_number.
-    """
-    if instance.verified_at and instance.user:
-        user = instance.user
-
-        # Update phone_verified flag
-        if not user.phone_verified:
-            user.phone_verified = True
-            user.phone_number = instance.phone_number
-            user.save(update_fields=["phone_verified", "phone_number"])
 
 
 @receiver(post_save, sender=SeniorFollow)

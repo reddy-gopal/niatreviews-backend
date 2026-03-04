@@ -71,19 +71,15 @@ backend/
 
 ### 3.2 verification
 
-**Purpose:** Senior verification workflow and phone OTP verification.
+**Purpose:** Senior verification workflow. Phone OTP is sent/verified by MSG91 (no local model).
 
 | Model | Description |
 |-------|-------------|
-| **PhoneVerification** | UUID PK. `phone_number`, `otp_code`, `user` (optional), `expires_at`, `verified_at`, `created_at`. `is_expired` property. |
 | **SeniorProfile** | UUID PK. OneToOne to User. `proof_summary`, `status` (pending/approved/rejected), `reviewed_by`, `reviewed_at`, `admin_notes`, timestamps. |
 
-**Signals** (`verification.signals`, loaded in `VerificationConfig.ready`):
+**Signals** (`verification.signals`): `post_save` **SeniorProfile** → set `User.is_verified_senior = True` when `status == "approved"`.
 
-- `post_save` **SeniorProfile** → set `User.is_verified_senior = True` when `status == "approved"`.
-- `post_save` **PhoneVerification** → when `verified_at` and `user` set, set `User.phone_number` and `User.phone_verified = True`.
-
-**API:** No DRF routes. Admin: SeniorProfile, PhoneVerification.
+**API:** OTP via `verification/otp_views` (MSG91) and senior/registration endpoints. Admin: SeniorProfile, SeniorRegistration, etc.
 
 ---
 

@@ -44,14 +44,19 @@ INSTALLED_APPS = [
     "qa",
     "notifications",
     "reviews",
+    "articles",
+    "campuses",
     "rest_framework",
     "corsheaders",
 ]
 
 # Custom user model (UUID PK); set before first migrate
 AUTH_USER_MODEL = "accounts.User"
+
+# Media files (user uploads). Article images are stored under media/article/images/
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+ARTICLE_IMAGES_UPLOAD_TO = "article/images"
 
 # REST framework: JWT auth, cursor pagination default
 REST_FRAMEWORK = {
@@ -70,13 +75,18 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-# CORS: allow frontend origin (Next.js dev + production)
+# CORS: allow credentials (withCredentials) from any origin.
+# Wildcard '*' cannot be used when credentials are included, so we match any origin via regex
+# and the response will echo the request's Origin (required for credentials).
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https?://"]  # any http(s) origin (ngrok, localhost, etc.)
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:3002",  # seniors-frontend
-    "http://127.0.0.1:3002",  # seniors-frontend
+    "http://localhost:3002",
+    "http://127.0.0.1:3002",
+    "http://localhost:5173",
 ]
 
 MIDDLEWARE = [
@@ -110,36 +120,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-# Set DATABASE_URL in .env for PostgreSQL (e.g. Neon); otherwise uses SQLite.
-_database_url = os.environ.get("DATABASE_URL", "").strip()
-if _database_url and _database_url.startswith("postgres"):
-    # Normalize postgres:// to postgresql:// for psycopg
-    if _database_url.startswith("postgres://"):
-        _database_url = "postgresql://" + _database_url.split("://", 1)[1]
-    from urllib.parse import urlparse
-    _p = urlparse(_database_url)
-    _db_name = (_p.path or "/neondb").lstrip("/") or "neondb"
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": _db_name,
-            "USER": _p.username,
-            "PASSWORD": _p.password,
-            "HOST": _p.hostname,
-            "PORT": _p.port or 5432,
-            "CONN_MAX_AGE": 600,
-            "OPTIONS": {"sslmode": "require"},
-        }
+# Database — SQLite only for now; migrate to Postgres in a later version.
+# Single database: default = db.sqlite3 (accounts, articles, qa, etc. all use it).
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 
 # Password validation
@@ -209,9 +197,11 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
-# Demo OTP for senior registration (use real SMS/email in production)
-DEMO_OTP_ENABLED = os.getenv("DEMO_OTP_ENABLED", "true").lower() in ("true", "1", "yes")
-DEMO_OTP_CODE = os.getenv("DEMO_OTP_CODE", "123456")
+# MSG91 OTP (we do not send OTP ourselves; MSG91 sends and verifies)
+MSG91_AUTH_KEY = os.getenv("MSG91_AUTH_KEY") or os.getenv("MSG91_API_KEY", "")
+MSG91_OTP_TEMPLATE_ID = os.getenv("MSG91_OTP_TEMPLATE_ID") or os.getenv("MSG91_TEMPLATE_ID", "")
+MSG91_OTP_EXPIRY = int(os.getenv("MSG91_OTP_EXPIRY", "1"))
+MSG91_OTP_LENGTH = int(os.getenv("MSG91_OTP_LENGTH", "4"))  # 4-digit OTP  
 
 # Main app URL for magic login links in approval emails
 MAIN_APP_URL = os.getenv("MAIN_APP_URL", "http://localhost:3000")

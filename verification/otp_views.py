@@ -1,47 +1,52 @@
 """
-Demo OTP and registration status API for senior registration flow.
-Use DEMO_OTP_CODE in development; replace with real SMS/email integration in production.
+OTP request/verify via MSG91 only. No demo OTP.
+Phone: MSG91 sends and verifies. When for=register, reject if phone already registered.
 """
 import logging
-from django.conf import settings
-from django.core.cache import cache
+import re
+from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import SeniorRegistration
+from .msg91_client import (
+    is_configured as msg91_configured,
+    send_otp as msg91_send_otp,
+    verify_otp as msg91_verify_otp,
+)
 
+User = get_user_model()
 logger = logging.getLogger(__name__)
 
-# Demo OTP: accept this code when DEMO_OTP_ENABLED is True (e.g. in dev)
-DEMO_OTP_CODE = getattr(settings, "DEMO_OTP_CODE", "123456")
-DEMO_OTP_ACCEPT_ALSO = ("000000",)  # common test code
-CACHE_PREFIX = "verification_otp"
-CACHE_TTL = 600  # 10 minutes
 
-
-def _demo_otp_enabled():
-    return getattr(settings, "DEMO_OTP_ENABLED", settings.DEBUG)
-
-
-def _otp_key(channel: str, value: str) -> str:
-    """Cache key for OTP (value normalized to lowercase for email)."""
-    normalized = value.strip().lower() if channel == "email" else value.strip()
-    return f"{CACHE_PREFIX}:{channel}:{normalized}"
+def _phone_already_registered(phone: str) -> bool:
+    """True if a user exists with this phone (exact or digits-only match)."""
+    if not phone or not phone.strip():
+        return False
+    if User.objects.filter(phone_number=phone.strip()).exists():
+        return True
+    digits = re.sub(r"\D", "", phone)
+    if not digits:
+        return False
+    return User.objects.filter(phone_number=digits).exists()
 
 
 class OTPRequestView(APIView):
     """
     POST /api/verification/otp/request/
-    Body: { "email": "user@example.com" } or { "phone": "+919876543210" }
-    In demo mode: stores fixed OTP (123456); in production, send via email/SMS.
+    Body: { "phone": "+919876543210" } or { "email": "..." }
+    Optional: "for": "register" | "login" — register: reject if already registered;
+    login: reject if not registered (send OTP only for existing accounts).
+    Phone: MSG91 sends OTP. Email: not configured (501).
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()
         phone = (request.data.get("phone") or "").strip()
+        otp_for = (request.data.get("for") or "").strip().lower()
         if email and phone:
             return Response(
                 {"detail": "Provide either email or phone, not both."},
@@ -52,20 +57,35 @@ class OTPRequestView(APIView):
                 {"detail": "Provide email or phone."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if email:
-            channel, value = "email", email
-        else:
-            channel, value = "phone", phone
-
-        if _demo_otp_enabled():
-            code = DEMO_OTP_CODE
-            cache.set(_otp_key(channel, value), code, CACHE_TTL)
-            logger.info("Demo OTP stored for %s (code=%s)", value[:3] + "***", code)
-            return Response({"message": "OTP sent. Use demo code 123456."})
-        # Production: generate code, send via email/SMS, store in cache
-        # TODO: integrate with your SMS/email provider
+        if phone:
+            if not msg91_configured():
+                return Response(
+                    {"detail": "OTP is not configured. Contact support."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+            if otp_for == "register" and _phone_already_registered(phone):
+                return Response(
+                    {
+                        "detail": "This phone number is already registered. Log in or use a different number.",
+                        "code": "PHONE_ALREADY_REGISTERED",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if otp_for == "login" and not _phone_already_registered(phone):
+                return Response(
+                    {
+                        "detail": "No account with this phone number. Please register first.",
+                        "code": "PHONE_NOT_REGISTERED",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ok, msg = msg91_send_otp(phone, template_params=request.data.get("template_params"))
+            if ok:
+                return Response({"message": msg or "OTP sent."})
+            return Response({"detail": msg}, status=status.HTTP_400_BAD_REQUEST)
+        # Email OTP not implemented
         return Response(
-            {"detail": "OTP sending not configured. Use demo mode."},
+            {"detail": "Email OTP is not available. Use phone number."},
             status=status.HTTP_501_NOT_IMPLEMENTED,
         )
 
@@ -73,8 +93,8 @@ class OTPRequestView(APIView):
 class OTPVerifyView(APIView):
     """
     POST /api/verification/otp/verify/
-    Body: { "email": "..." or "phone": "...", "code": "123456" }
-    Returns { "verified": true } on success.
+    Body: { "phone": "...", "code": "123456" } or { "email": "...", "code": "..." }
+    Phone: MSG91 verifies. Email: not implemented (501).
     """
     permission_classes = [AllowAny]
 
@@ -97,23 +117,22 @@ class OTPVerifyView(APIView):
                 {"detail": "Provide code."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if email:
-            channel, value = "email", email
-        else:
-            channel, value = "phone", phone
-
-        key = _otp_key(channel, value)
-        stored = cache.get(key) if not _demo_otp_enabled() else DEMO_OTP_CODE
-        if _demo_otp_enabled():
-            accepted = code == DEMO_OTP_CODE or code in DEMO_OTP_ACCEPT_ALSO
-        else:
-            accepted = stored and stored == code
-        if accepted:
-            cache.delete(key)
-            return Response({"verified": True})
+        if phone:
+            if not msg91_configured():
+                return Response(
+                    {"detail": "OTP verification is not configured."},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+            ok, _ = msg91_verify_otp(phone, code)
+            if ok:
+                return Response({"verified": True})
+            return Response(
+                {"detail": "Invalid or expired code.", "verified": False},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(
-            {"detail": "Invalid or expired code.", "verified": False},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"detail": "Email OTP is not available. Use phone number."},
+            status=status.HTTP_501_NOT_IMPLEMENTED,
         )
 
 

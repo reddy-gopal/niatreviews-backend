@@ -3,7 +3,7 @@ Verification API serializers.
 """
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from .models import SeniorProfile, PhoneVerification, SeniorRegistration
+from .models import SeniorProfile, SeniorRegistration
 
 User = get_user_model()
 
@@ -37,25 +37,6 @@ class SeniorProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-
-class PhoneVerificationSerializer(serializers.ModelSerializer):
-    """
-    Serializer for PhoneVerification.
-    """
-    class Meta:
-        model = PhoneVerification
-        fields = [
-            "id",
-            "phone_number",
-            "otp_code",
-            "expires_at",
-            "verified_at",
-            "user",
-            "created_at",
-        ]
-        read_only_fields = ["id", "verified_at", "created_at"]
-
 
 
 class SeniorRegistrationSerializer(serializers.ModelSerializer):

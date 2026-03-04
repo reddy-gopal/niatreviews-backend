@@ -3,7 +3,7 @@ Admin interface for verification models.
 """
 from django.contrib import admin
 from django.utils import timezone
-from .models import SeniorFollow, SeniorProfile, PhoneVerification, SeniorRegistration, MagicLoginToken
+from .models import SeniorFollow, SeniorProfile, SeniorRegistration, MagicLoginToken
 
 
 @admin.register(SeniorProfile)
@@ -90,40 +90,6 @@ class SeniorProfileAdmin(admin.ModelAdmin):
                 obj.reviewed_by = request.user
                 obj.reviewed_at = timezone.now()
         super().save_model(request, obj, form, change)
-
-
-@admin.register(PhoneVerification)
-class PhoneVerificationAdmin(admin.ModelAdmin):
-    """
-    Admin interface for phone verification records.
-    """
-    list_display = (
-        "phone_number",
-        "user",
-        "verified_at",
-        "expires_at",
-        "is_expired",
-        "created_at",
-    )
-    list_filter = ("verified_at", "created_at")
-    search_fields = ("phone_number", "user__username", "user__email")
-    raw_id_fields = ("user",)
-    readonly_fields = ("id", "created_at", "is_expired")
-    date_hierarchy = "created_at"
-    
-    fieldsets = (
-        ("Phone Information", {
-            "fields": ("phone_number", "user")
-        }),
-        ("Verification", {
-            "fields": ("otp_code", "expires_at", "verified_at", "is_expired")
-        }),
-        ("Metadata", {
-            "fields": ("id", "created_at"),
-            "classes": ("collapse",)
-        }),
-    )
-
 
 
 @admin.register(SeniorRegistration)

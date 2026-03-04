@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User
+from .models import User, FoundingEditorProfile
+
+
+@admin.register(FoundingEditorProfile)
+class FoundingEditorProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "campus_id", "campus_name", "year_joined", "linkedin_profile")
+    search_fields = ("user__username", "linkedin_profile")
 
 
 @admin.register(User)

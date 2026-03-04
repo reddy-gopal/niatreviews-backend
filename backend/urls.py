@@ -22,10 +22,13 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.views import (
     RegisterView,
     MeView,
+    FoundingEditorProfileView,
     UserProfileByUsernameView,
     ForgotPasswordResetView,
     ChangePasswordView,
     DeleteAccountView,
+    PhoneLoginView,
+    PhonePasswordLoginView,
 )
 from verification.magic_login_views import MagicLoginView
 from qa.dashboard_views import SeniorDashboardView
@@ -36,7 +39,10 @@ urlpatterns = [
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/auth/register/", RegisterView.as_view(), name="register"),
     path("api/auth/forgot-password/reset/", ForgotPasswordResetView.as_view(), name="forgot-password-reset"),
+    path("api/auth/login/phone/", PhoneLoginView.as_view(), name="login-phone"),
+    path("api/auth/login/phone-password/", PhonePasswordLoginView.as_view(), name="login-phone-password"),
     path("api/auth/me/", MeView.as_view(), name="me"),
+    path("api/auth/me/profile/", FoundingEditorProfileView.as_view(), name="me-profile"),
     path("api/auth/change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("api/auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
@@ -47,6 +53,8 @@ urlpatterns = [
     path("api/verification/", include("verification.urls")),
     path("api/seniors/", include("verification.senior_urls")),
     path("api/senior/", include("reviews.onboarding_urls")),
+    path("api/articles/", include("articles.urls")),
+    path("api/campuses/", include("campuses.urls")),
 ]
 
 if settings.DEBUG:
