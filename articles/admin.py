@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Article, ArticleComment, Category, Subcategory
+from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Subcategory
 
 
 class SubcategoryInline(admin.TabularInline):
@@ -35,7 +35,8 @@ class ArticleAdmin(admin.ModelAdmin):
         "subcategory_other",
         "status",
         "featured",
-        "helpful_count",
+        "upvote_count",
+        "view_count",
         "created_at",
     )
     list_filter = ("status", "category", "subcategory", "is_global_guide", "featured")
@@ -44,7 +45,8 @@ class ArticleAdmin(admin.ModelAdmin):
         "author_id",
         "author_username",
         "slug",
-        "helpful_count",
+        "upvote_count",
+        "view_count",
         "reviewed_by_id",
         "reviewed_at",
         "published_at",
@@ -86,15 +88,17 @@ class ArticleAdmin(admin.ModelAdmin):
         self.message_user(request, f"Rejected {queryset.count()} article(s).")
 
 
-@admin.register(ArticleComment)
-class ArticleCommentAdmin(admin.ModelAdmin):
-    list_display = ("article", "author_username", "body", "created_at", "is_visible")
+@admin.register(ArticleUpvote)
+class ArticleUpvoteAdmin(admin.ModelAdmin):
+    list_display = ("id", "article", "user", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("article__title", "user__username")
+    readonly_fields = ("created_at",)
 
-    def get_queryset(self, request):
-        return super().get_queryset(request)
 
-    def save_model(self, request, obj, form, change):
-        obj.save()
-
-    def delete_model(self, request, obj):
-        obj.delete()
+@admin.register(ArticleSuggestion)
+class ArticleSuggestionAdmin(admin.ModelAdmin):
+    list_display = ("id", "article", "type", "content", "is_anonymous", "reviewed", "created_at")
+    list_filter = ("type", "reviewed", "created_at")
+    search_fields = ("article__title", "content")
+    readonly_fields = ("created_at",)

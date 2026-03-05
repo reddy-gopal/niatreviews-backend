@@ -82,11 +82,8 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGIN_REGEXES = [r"^https?://"]  # any http(s) origin (ngrok, localhost, etc.)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3002",
-    "http://127.0.0.1:3002",
-    "http://localhost:5173",
+    "https://www.niatreviews.com",
+    "https://niatreviews.com",
 ]
 
 MIDDLEWARE = [

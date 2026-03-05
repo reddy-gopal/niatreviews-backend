@@ -1,4 +1,5 @@
 import uuid
+from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
@@ -72,9 +73,23 @@ STATUS_CHOICES = [
 
 
 class Article(models.Model):
-    author_id = models.CharField(max_length=36, db_index=True)
+    author_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="articles",
+        db_column="author_id",
+    )
     author_username = models.CharField(max_length=150)
-    campus_id = models.IntegerField(null=True, blank=True)
+    campus_id = models.ForeignKey(
+        "campuses.Campus",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="articles",
+        db_column="campus_id",
+    )
     campus_name = models.CharField(max_length=200, blank=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     category_fk = models.ForeignKey(
@@ -93,7 +108,8 @@ class Article(models.Model):
     images = models.JSONField(default=list, blank=True, help_text="List of image URLs from the article body")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending_review")
     featured = models.BooleanField(default=False)
-    helpful_count = models.PositiveIntegerField(default=0)
+    upvote_count = models.PositiveIntegerField(default=0, db_index=True)
+    view_count = models.PositiveIntegerField(default=0, db_index=True)
     is_global_guide = models.BooleanField(default=False)
     topic = models.CharField(max_length=50, choices=GUIDE_TOPIC_CHOICES, blank=True)
     club_id = models.IntegerField(null=True, blank=True)
@@ -101,7 +117,14 @@ class Article(models.Model):
     subcategory = models.CharField(max_length=80, blank=True, db_index=True)
     subcategory_other = models.CharField(max_length=200, blank=True)
     rejection_reason = models.TextField(blank=True)
-    reviewed_by_id = models.CharField(max_length=36, blank=True)
+    reviewed_by_id = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_articles",
+        db_column="reviewed_by_id",
+    )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -134,26 +157,72 @@ def generate_unique_slug(title, instance=None):
     return slug
 
 
-class ArticleHelpful(models.Model):
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="helpful_votes")
-    user_id = models.CharField(max_length=36)
+SUGGESTION_TYPE_CHOICES = [
+    ("missing_info", "Missing Info"),
+    ("outdated_content", "Outdated Content"),
+    ("wrong_info", "Wrong Info"),
+    ("add_club_or_facility", "Add a Club or Facility"),
+    ("other", "Other"),
+]
+
+
+class ArticleUpvote(models.Model):
+    """One upvote per user per article. Unique (article_id, user_id)."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name="upvotes",
+        db_column="article_id",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="article_upvotes",
+        db_column="user_id",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         app_label = "articles"
+        db_table = "articles_articleupvote"
         constraints = [
-            models.UniqueConstraint(fields=["article", "user_id"], name="articles_articlehelpful_unique")
+            models.UniqueConstraint(fields=["article", "user"], name="articles_articleupvote_article_user_uniq")
+        ]
+        indexes = [
+            models.Index(fields=["article", "user"], name="articles_upv_article_user_idx"),
         ]
 
 
-class ArticleComment(models.Model):
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
-    author_id = models.CharField(max_length=36)
-    author_username = models.CharField(max_length=150)
-    body = models.TextField(max_length=2000)
+class ArticleSuggestion(models.Model):
+    """Structured suggestion for an article. Not shown publicly; author/admin see via dashboard."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name="suggestions",
+        db_column="article_id",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="article_suggestions",
+        db_column="user_id",
+    )
+    type = models.CharField(max_length=32, choices=SUGGESTION_TYPE_CHOICES, db_index=True)
+    content = models.CharField(max_length=150)
+    is_anonymous = models.BooleanField(default=False)
+    reviewed = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    is_visible = models.BooleanField(default=True)
 
     class Meta:
         app_label = "articles"
-        ordering = ["created_at"]
+        db_table = "articles_articlesuggestion"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["article"], name="articles_sugg_article_idx"),
+            models.Index(fields=["reviewed", "created_at"], name="articles_sugg_rev_created_idx"),
+        ]
+

@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Article, ArticleComment, Category, CATEGORY_CHOICES, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
+from .models import Article, Category, CATEGORY_CHOICES, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
 
 CATEGORY_VALUES = [c[0] for c in CATEGORY_CHOICES]
 GUIDE_TOPIC_VALUES = [c[0] for c in GUIDE_TOPIC_CHOICES]
@@ -53,7 +53,8 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "images",
             "status",
             "featured",
-            "helpful_count",
+            "upvote_count",
+            "view_count",
             "is_global_guide",
             "topic",
             "club_id",
@@ -74,19 +75,13 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
 
 class ArticleDetailSerializer(ArticleListSerializer):
-    comments_count = serializers.SerializerMethodField()
-
     class Meta(ArticleListSerializer.Meta):
         fields = ArticleListSerializer.Meta.fields + [
             "body",
             "rejection_reason",
             "reviewed_at",
             "created_at",
-            "comments_count",
         ]
-
-    def get_comments_count(self, obj):
-        return ArticleComment.objects.filter(article=obj, is_visible=True).count()
 
 
 class ArticleWriteSerializer(serializers.Serializer):
@@ -160,7 +155,3 @@ class ModerationSerializer(serializers.Serializer):
         return attrs
 
 
-class ArticleCommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ArticleComment
-        fields = ["id", "author_username", "body", "created_at"]

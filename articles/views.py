@@ -1,6 +1,10 @@
 import re
 import uuid
+from collections import defaultdict
+
 from django.conf import settings
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -9,8 +13,9 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Count, F
 
-from .models import Article, ArticleComment, ArticleHelpful, Category, Subcategory, generate_unique_slug
+from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Subcategory, generate_unique_slug
 from accounts.models import FoundingEditorProfile
 from .permissions import IsAuthorOrModerator, IsModerator
 from .serializers import (
@@ -19,7 +24,6 @@ from .serializers import (
     ArticleWriteSerializer,
     CategorySerializer,
     ModerationSerializer,
-    ArticleCommentSerializer,
 )
 
 
@@ -82,8 +86,8 @@ class ArticleViewSet(viewsets.ModelViewSet):
             qs = qs.filter(topic=topic)
 
         ordering = self.request.query_params.get("ordering", "updated_at")
-        if ordering == "helpful_count":
-            qs = qs.order_by("-helpful_count", "-updated_at")
+        if ordering == "upvote_count":
+            qs = qs.order_by("-upvote_count", "-updated_at")
         else:
             qs = qs.order_by("-updated_at")
         return qs
@@ -96,7 +100,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
-        if self.action in ("create", "helpful"):
+        if self.action == "create":
             return [IsAuthenticated()]
         if self.action in ("partial_update", "destroy"):
             return [IsAuthenticated(), IsAuthorOrModerator()]
@@ -250,21 +254,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article.save()
         return Response(ArticleDetailSerializer(article).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def helpful(self, request, pk=None):
-        article = self.get_object()
-        user_id = str(request.user.id)
-        existing = ArticleHelpful.objects.filter(article=article, user_id=user_id).first()
-        if existing:
-            existing.delete()
-            article.helpful_count = max(0, article.helpful_count - 1)
-            article.save(update_fields=["helpful_count"])
-            return Response({"helpful_count": article.helpful_count, "marked": False})
-        ArticleHelpful.objects.create(article=article, user_id=user_id)
-        article.helpful_count += 1
-        article.save(update_fields=["helpful_count"])
-        return Response({"helpful_count": article.helpful_count, "marked": True})
-
     @action(detail=False, methods=["get"], permission_classes=[IsModerator])
     def pending(self, request):
         qs = Article.objects.filter(status="pending_review").order_by("created_at")
@@ -284,33 +273,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = ArticleListSerializer(qs, many=True)
         return Response(serializer.data)
-
-    @action(detail=True, methods=["get", "post"], url_path="comments")
-    def comments(self, request, pk=None):
-        article = self.get_object()
-        if article.status != "published" and not request.user.is_authenticated:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if article.status != "published" and str(article.author_id) != str(request.user.id) and getattr(request.user, "role", None) != "moderator":
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if request.method == "GET":
-            comments = ArticleComment.objects.filter(article=article, is_visible=True)
-            serializer = ArticleCommentSerializer(comments, many=True)
-            return Response(serializer.data)
-        if request.method == "POST":
-            if not request.user.is_authenticated:
-                return Response({"detail": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
-            body = (request.data.get("body") or "").strip()
-            if not body:
-                return Response({"body": "Required."}, status=status.HTTP_400_BAD_REQUEST)
-            comment = ArticleComment.objects.create(
-                article=article,
-                author_id=str(request.user.id),
-                author_username=request.user.username,
-                body=body[:2000],
-            )
-            return Response(ArticleCommentSerializer(comment).data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 class CategoryListView(APIView):
     permission_classes = [AllowAny]
@@ -340,22 +302,6 @@ class SubcategoryListView(APIView):
         subs = Subcategory.objects.filter(category=cat).order_by("display_order", "slug")
         data = [{"slug": s.slug, "label": s.label, "requires_other": s.requires_other} for s in subs]
         return Response(data)
-
-
-class ArticleCommentDestroyView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, article_pk, pk):
-        article = Article.objects.filter(pk=article_pk).first()
-        if not article:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        comment = ArticleComment.objects.filter(article=article, pk=pk).first()
-        if not comment:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-        if str(comment.author_id) != str(request.user.id) and getattr(request.user, "role", None) != "moderator":
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        comment.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def _validate_image_file(file):
@@ -402,3 +348,121 @@ class ArticleImageUploadView(APIView):
 
         url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
         return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
+def _get_article_for_engagement(article_id, request=None):
+    """Fetch published article or 404. Optional permission check for non-public actions."""
+    return get_object_or_404(Article, pk=article_id, status="published")
+
+
+class ArticleUpvoteView(APIView):
+    """POST: toggle upvote. One per user per article. Upsert: create or delete."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, article_id):
+        article = _get_article_for_engagement(article_id, request)
+        user = request.user
+        with transaction.atomic():
+            upvote = ArticleUpvote.objects.filter(article=article, user=user).first()
+            if upvote:
+                upvote.delete()
+                article.upvote_count = max(0, article.upvote_count - 1)
+                article.save(update_fields=["upvote_count"])
+                return Response({"upvote_count": article.upvote_count, "upvoted": False})
+            ArticleUpvote.objects.create(article=article, user=user)
+            article.upvote_count += 1
+            article.save(update_fields=["upvote_count"])
+            return Response({"upvote_count": article.upvote_count, "upvoted": True})
+
+
+class ArticleUpvoteStatusView(APIView):
+    """GET: upvote count + current user's upvote state."""
+    permission_classes = [AllowAny]
+
+    def get(self, request, article_id):
+        article = _get_article_for_engagement(article_id)
+        upvoted = False
+        if request.user.is_authenticated:
+            upvoted = ArticleUpvote.objects.filter(article=article, user=request.user).exists()
+        return Response({
+            "upvote_count": article.upvote_count,
+            "upvoted": upvoted,
+        })
+
+
+class ArticleSuggestView(APIView):
+    """POST: submit a structured suggestion. Auth required. Rate limit per user per article per 24h (no throttling for now)."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, article_id):
+        article = _get_article_for_engagement(article_id)
+        type_val = (request.data.get("type") or "").strip()
+        content = (request.data.get("content") or "").strip()[:150]
+        valid_types = [c[0] for c in ArticleSuggestion._meta.get_field("type").choices]
+        if type_val not in valid_types:
+            return Response({"type": "Invalid or missing type."}, status=status.HTTP_400_BAD_REQUEST)
+        if not content:
+            return Response({"content": "Required (max 150 characters)."}, status=status.HTTP_400_BAD_REQUEST)
+        is_anonymous = bool(request.data.get("is_anonymous", False))
+        ArticleSuggestion.objects.create(
+            article=article,
+            user=None if is_anonymous else request.user,
+            type=type_val,
+            content=content,
+            is_anonymous=is_anonymous,
+        )
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
+
+
+class ArticleViewIncrementView(APIView):
+    """POST: increment view count. Anonymous allowed. Deduplication is client-side (sessionStorage)."""
+    permission_classes = [AllowAny]
+
+    def post(self, request, article_id):
+        article = _get_article_for_engagement(article_id)
+        Article.objects.filter(pk=article.pk).update(view_count=F("view_count") + 1)
+        return Response({"ok": True}, status=status.HTTP_200_OK)
+
+
+class ArticleSuggestionsListView(APIView):
+    """GET: list suggestions for an article. Author or admin/moderator only."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, article_id):
+        article = get_object_or_404(Article, pk=article_id)
+        is_author = str(article.author_id_id) == str(request.user.id) if article.author_id_id else False
+        is_admin = getattr(request.user, "role", None) in ("admin", "moderator")
+        if not (is_author or is_admin):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        suggestions = ArticleSuggestion.objects.filter(article=article).order_by("-created_at")
+        data = [
+            {
+                "id": str(s.id),
+                "type": s.type,
+                "content": s.content,
+                "is_anonymous": s.is_anonymous,
+                "reviewed": s.reviewed,
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in suggestions
+        ]
+        return Response(data)
+
+
+class CampusArticleBreakdownView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        qs = (
+            Article.objects
+            .filter(status="pending_review")
+            .values("campus_name", "author_username")
+            .annotate(article_count=Count("id"))
+            .order_by("-article_count")
+        )
+        breakdown = defaultdict(lambda: {"article_count": 0, "authors": []})
+        for row in qs:
+            campus = row["campus_name"] or "Unknown"
+            breakdown[campus]["article_count"] += row["article_count"]
+            breakdown[campus]["authors"].append({"username": row["author_username"], "article_count": row["article_count"]})
+        return Response(breakdown, status=status.HTTP_200_OK)

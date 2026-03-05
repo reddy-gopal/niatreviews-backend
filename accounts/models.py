@@ -79,9 +79,13 @@ class FoundingEditorProfile(models.Model):
         primary_key=True,
     )
     linkedin_profile = models.URLField(max_length=500, blank=True, help_text="LinkedIn profile URL")
-    campus_id = models.IntegerField(
+    campus_id = models.ForeignKey(
+        "campuses.Campus",
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name="founding_editors",
+        db_column="campus_id",
         help_text="Default campus for articles; matches campus list in frontend.",
     )
     campus_name = models.CharField(max_length=200, blank=True, help_text="Campus display name (e.g. from frontend list).")
