@@ -1,7 +1,8 @@
 import re
 import uuid
+import logging
 from collections import defaultdict
-
+from django.http import Http404
 from django.conf import settings
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -25,6 +26,8 @@ from .serializers import (
     CategorySerializer,
     ModerationSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def extract_image_urls_from_html(body):
@@ -56,7 +59,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status="published")
         elif not is_moderator:
             from django.db.models import Q
-            qs = qs.filter(Q(status="published") | Q(author_id=str(user.id)))
+            qs = qs.filter(Q(status="published") | Q(author_id_id=str(user.id)))
         # else moderator sees all
 
         campus = self.request.query_params.get("campus")
@@ -111,29 +114,52 @@ class ArticleViewSet(viewsets.ModelViewSet):
         if self.action == "my_articles":
             return [IsAuthenticated()]
         return [AllowAny()]
-
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.status != "published":
             if not request.user.is_authenticated:
                 return Response(status=status.HTTP_404_NOT_FOUND)
-            if str(instance.author_id) != str(request.user.id) and getattr(request.user, "role", None) != "moderator":
+            if str(instance.author_id_id) != str(request.user.id) and getattr(request.user, "role", None) != "moderator":
                 return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-
     def create(self, request, *args, **kwargs):
         data_for_serializer = dict(request.data)
+        logger.error(f"[DEBUG] Original request data: {dict(request.data)}")
+        
         if getattr(request.user, "role", None) == "founding_editor":
             try:
                 profile = FoundingEditorProfile.objects.get(user=request.user)
                 if profile.campus_id is not None:
-                    data_for_serializer["campus_id"] = profile.campus_id
+                    data_for_serializer["campus_id"] = profile.campus_id.id
                     data_for_serializer["campus_name"] = profile.campus_name or ""
+                    logger.error(f"[DEBUG] Added founding editor data: campus_id={profile.campus_id.id}, campus_name={profile.campus_name}")
             except FoundingEditorProfile.DoesNotExist:
+                logger.error("[DEBUG] FoundingEditorProfile not found")
                 pass
+        
+        logger.error(f"[DEBUG] Final serializer data: {data_for_serializer}")
+        
         serializer = ArticleWriteSerializer(data=data_for_serializer, context={"request": request})
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            logger.error(f"[DEBUG] Serializer validation errors: {serializer.errors}")
+            debug_data = {}
+            for key, value in data_for_serializer.items():
+                try:
+                    import json
+                    json.dumps(value)
+                    debug_data[key] = value
+                except (TypeError, ValueError):
+                    debug_data[key] = str(value)
+            
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors,
+                'data_received': debug_data
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        logger.error("[DEBUG] Serializer validation passed")
+            
         data = serializer.validated_data
         save_as_draft = data.get("save_as_draft", False)
         article_status = "draft" if save_as_draft else "pending_review"
@@ -142,20 +168,18 @@ class ArticleViewSet(viewsets.ModelViewSet):
         campus_id = data.get("campus_id")
         campus_name = data.get("campus_name") or ""
         body_str = (data.get("body") or "").strip() or ""
-        images = data.get("images")
-        if images is None:
+        images = data.get("images", [])
+        if not images:
             images = extract_image_urls_from_html(body_str)
-        if not isinstance(images, list):
-            images = list(images) if images else []
-        cover_image = (data.get("cover_image") or "").strip()
+        cover_image = data.get("cover_image", "")
         if not cover_image and images:
             cover_image = images[0] if images else ""
         article = Article(
-            author_id=str(request.user.id),
+            author_id=request.user,
             author_username=request.user.username,
-            campus_id=campus_id,
+            campus_id_id=campus_id,          # FIX: use _id suffix for raw integer FK
             campus_name=campus_name,
-            category=data.get("category") or "campus-life",
+            category=data.get("category") or "onboarding-kit",
             category_fk=resolved,
             title=(data.get("title") or "").strip() or "Draft",
             slug=slug,
@@ -186,7 +210,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 try:
                     profile = FoundingEditorProfile.objects.get(user=request.user)
                     if profile.campus_id is not None:
-                        data_copy["campus_id"] = profile.campus_id
+                        data_copy["campus_id"] = profile.campus_id.id
                         data_copy["campus_name"] = profile.campus_name or ""
                 except FoundingEditorProfile.DoesNotExist:
                     pass
@@ -208,7 +232,12 @@ class ArticleViewSet(viewsets.ModelViewSet):
             if extracted:
                 instance.images = extracted
                 instance.cover_image = extracted[0] or instance.cover_image or ""
-        for key in ("campus_id", "campus_name", "category", "title", "excerpt", "body", "cover_image", "is_global_guide", "topic", "club_id", "subcategory", "subcategory_other"):
+
+        # FIX: handle campus_id separately using _id suffix for raw integer FK
+        if "campus_id" in data:
+            instance.campus_id_id = data["campus_id"]
+
+        for key in ("campus_name", "category", "title", "excerpt", "body", "cover_image", "is_global_guide", "topic", "club_id", "subcategory", "subcategory_other"):
             if key in data:
                 val = data[key]
                 if key in ("subcategory", "subcategory_other"):
@@ -220,7 +249,6 @@ class ArticleViewSet(viewsets.ModelViewSet):
         if "_resolved_category" in data:
             instance.category_fk = data["_resolved_category"]
         if not is_moderator and "status" in request.data:
-            # Author may set draft (save draft) or draft -> pending_review (submit for review)
             new_status = request.data.get("status")
             if new_status == "pending_review" and instance.status == "draft":
                 instance.status = "pending_review"
@@ -266,7 +294,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def my_articles(self, request):
-        qs = Article.objects.filter(author_id=str(request.user.id)).order_by("-created_at")
+        qs = Article.objects.filter(author_id_id=str(request.user.id)).order_by("-created_at")
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = ArticleListSerializer(page, many=True)
@@ -351,9 +379,15 @@ class ArticleImageUploadView(APIView):
 
 
 def _get_article_for_engagement(article_id, request=None):
-    """Fetch published article or 404. Optional permission check for non-public actions."""
-    return get_object_or_404(Article, pk=article_id, status="published")
-
+    article = get_object_or_404(Article, pk=article_id)
+    # Allow access if published, or if the requester is the author/moderator
+    if article.status != "published":
+        if request is None or not request.user.is_authenticated:
+            raise Http404
+        if (str(article.author_id_id) != str(request.user.id) and
+                getattr(request.user, "role", None) != "moderator"):
+            raise Http404
+    return article
 
 class ArticleUpvoteView(APIView):
     """POST: toggle upvote. One per user per article. Upsert: create or delete."""
@@ -380,7 +414,7 @@ class ArticleUpvoteStatusView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, article_id):
-        article = _get_article_for_engagement(article_id)
+        article = _get_article_for_engagement(article_id, request)
         upvoted = False
         if request.user.is_authenticated:
             upvoted = ArticleUpvote.objects.filter(article=article, user=request.user).exists()
@@ -395,7 +429,7 @@ class ArticleSuggestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, article_id):
-        article = _get_article_for_engagement(article_id)
+        article = _get_article_for_engagement(article_id, request)
         type_val = (request.data.get("type") or "").strip()
         content = (request.data.get("content") or "").strip()[:150]
         valid_types = [c[0] for c in ArticleSuggestion._meta.get_field("type").choices]
@@ -419,7 +453,7 @@ class ArticleViewIncrementView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, article_id):
-        article = _get_article_for_engagement(article_id)
+        article = _get_article_for_engagement(article_id, request)
         Article.objects.filter(pk=article.pk).update(view_count=F("view_count") + 1)
         return Response({"ok": True}, status=status.HTTP_200_OK)
 

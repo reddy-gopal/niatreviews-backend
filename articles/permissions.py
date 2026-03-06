@@ -14,4 +14,4 @@ class IsAuthorOrModerator(BasePermission):
     def has_object_permission(self, request, view, obj):
         if getattr(request.user, "role", None) == "moderator":
             return True
-        return str(obj.author_id) == str(request.user.id)
+        return str(obj.author_id_id) == str(request.user.id)
