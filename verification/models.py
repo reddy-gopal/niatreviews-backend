@@ -212,7 +212,12 @@ class MagicLoginToken(models.Model):
 
 class SeniorFollow(models.Model):
     """User follows a verified senior. Unique (follower, senior)."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="id_new"
+    )
     follower = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

@@ -15,7 +15,12 @@ CATEGORY_CHOICES = [
 
 class Category(models.Model):
     """Section categories for articles. Seeded with 6 default sections."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="id_new"
+    )
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=80, unique=True)
 
@@ -31,7 +36,12 @@ class Category(models.Model):
 
 class Subcategory(models.Model):
     """Subcategories for categories that need them (e.g. Club Directory, Amenities). Scalable and admin-managed."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="id_new"
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -75,7 +85,12 @@ STATUS_CHOICES = [
 
 
 class Article(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        db_column="id_new"
+    )
     author_id = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -171,7 +186,11 @@ SUGGESTION_TYPE_CHOICES = [
 
 class ArticleUpvote(models.Model):
     """One upvote per user per article. Unique (article_id, user_id)."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     article = models.ForeignKey(
         Article,
         on_delete=models.CASCADE,
@@ -199,7 +218,11 @@ class ArticleUpvote(models.Model):
 
 class ArticleSuggestion(models.Model):
     """Structured suggestion for an article. Not shown publicly; author/admin see via dashboard."""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
     article = models.ForeignKey(
         Article,
         on_delete=models.CASCADE,
