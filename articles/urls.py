@@ -26,5 +26,6 @@ urlpatterns = [
     path("articles/<int:article_id>/view/", ArticleViewIncrementView.as_view(), name="article-view"),
     path("articles/<int:article_id>/suggestions/", ArticleSuggestionsListView.as_view(), name="article-suggestions-list"),
     path("stats/campus-breakdown/", CampusArticleBreakdownView.as_view()),
+    path("api/admin/", include("articles.admin_urls")),
     path("", include(router.urls)),
 ]

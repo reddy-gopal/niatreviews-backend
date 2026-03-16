@@ -15,3 +15,10 @@ class IsAuthorOrModerator(BasePermission):
         if getattr(request.user, "role", None) == "moderator":
             return True
         return str(obj.author_id_id) == str(request.user.id)
+
+class IsAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated and getattr(request.user, "role", None) == "admin"
+        )
