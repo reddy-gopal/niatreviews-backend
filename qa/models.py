@@ -139,6 +139,7 @@ class FollowUp(models.Model):
 
 
 class QuestionVote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
     question = models.ForeignKey(
         Question,
         on_delete=models.CASCADE,
@@ -165,6 +166,7 @@ class QuestionVote(models.Model):
 
 
 class AnswerVote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, db_column="id_new")
     answer = models.ForeignKey(
         Answer,
         on_delete=models.CASCADE,
