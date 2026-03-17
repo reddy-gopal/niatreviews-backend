@@ -143,6 +143,9 @@ class Article(models.Model):
         related_name="reviewed_articles",
         db_column="reviewed_by_id",
     )
+    ai_confident_score = models.FloatField(null = True, blank=True)
+    ai_feedback = models.JSONField(null = True, blank=True)
+    ai_reviewed_at = models.DateTimeField(null = True, blank=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

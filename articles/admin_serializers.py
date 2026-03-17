@@ -13,6 +13,9 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(source="author_id", read_only=True)
     campus_name = serializers.CharField(read_only=True)
     campus_slug = serializers.SerializerMethodField()
+    ai_confident_score = serializers.FloatField(read_only=True)
+    ai_feedback = serializers.JSONField(read_only=True)
+    ai_reviewed_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Article
@@ -29,6 +32,9 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
             "upvote_count",
             "view_count",
             "featured",
+            "ai_confident_score",
+            "ai_feedback",
+            "ai_reviewed_at",
         ]
 
     def get_campus_slug(self, obj):
@@ -38,6 +44,9 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
 class ArticleAdminDetailSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(source="author_id", read_only=True)
     campus_name = serializers.CharField(read_only=True)
+    ai_confident_score = serializers.FloatField(read_only=True)
+    ai_feedback = serializers.JSONField(read_only=True)
+    ai_reviewed_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Article
@@ -54,6 +63,7 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "category",
             "category_fk",
             "subcategory",
+            "subcategory_other",
             "topic",
             "author",
             "author_username",
@@ -63,6 +73,9 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "view_count",
             "cover_image",
             "images",
+            "ai_confident_score",
+            "ai_feedback",
+            "ai_reviewed_at",
         ]
         read_only_fields = [
             "id",
