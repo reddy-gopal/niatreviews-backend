@@ -1,5 +1,6 @@
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 
@@ -8,8 +9,15 @@ from .admin_serializers import ArticleAdminListSerializer, ArticleAdminDetailSer
 from .permissions import IsAdmin
 
 
+class ArticleAdminPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class ArticleAdminViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = ArticleAdminPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "category", "campus_id", "featured", "is_global_guide"]
     search_fields = ["title", "author_username", "campus_name"]
