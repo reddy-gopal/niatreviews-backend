@@ -30,7 +30,22 @@ class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["id", "username", "email", "role", "is_verified_senior", "phone_number", "phone_verified"]
-        read_only_fields = ["id", "username", "role", "is_verified_senior", "phone_verified"]
+        read_only_fields = ["id", "role", "is_verified_senior", "phone_verified"]
+
+    def validate_username(self, value):
+        value = (value or "").strip()
+        if not value:
+            raise serializers.ValidationError("Username cannot be empty.")
+        if value.lower() == "me":
+            raise serializers.ValidationError("This username is reserved.")
+        request = self.context.get("request")
+        current_user = getattr(request, "user", None)
+        qs = User.objects.filter(username__iexact=value)
+        if current_user is not None and getattr(current_user, "pk", None):
+            qs = qs.exclude(pk=current_user.pk)
+        if qs.exists():
+            raise serializers.ValidationError("A user with that username already exists.")
+        return value
 
 
 class PublicProfileSerializer(serializers.ModelSerializer):

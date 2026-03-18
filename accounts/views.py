@@ -105,7 +105,7 @@ class MeView(APIView):
                 MagicLoginToken.objects.filter(user=user).update(is_used=True)
                 return Response(ProfileSerializer(user).data)
             return Response(setup.errors, status=status.HTTP_400_BAD_REQUEST)
-        serializer = ProfileSerializer(user, data=request.data, partial=True)
+        serializer = ProfileSerializer(user, data=request.data, partial=True, context={"request": request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
