@@ -11,6 +11,8 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 class ArticleAdminListSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(source="author_id", read_only=True)
+    reviewed_by = AuthorSerializer(source="reviewed_by_id", read_only=True)
+    reviewed_at = serializers.DateTimeField(read_only=True)
     campus_name = serializers.CharField(read_only=True)
     campus_slug = serializers.SerializerMethodField()
     ai_confident_score = serializers.FloatField(read_only=True)
@@ -21,12 +23,15 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
         model = Article
         fields = [
             "id",
+            "slug",
             "title",
             "status",
             "created_at",
             "updated_at",
             "category",
             "author",
+            "reviewed_by",
+            "reviewed_at",
             "campus_name",
             "campus_slug",
             "upvote_count",
@@ -43,6 +48,8 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
 
 class ArticleAdminDetailSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(source="author_id", read_only=True)
+    reviewed_by = AuthorSerializer(source="reviewed_by_id", read_only=True)
+    reviewed_at = serializers.DateTimeField(read_only=True)
     campus_name = serializers.CharField(read_only=True)
     ai_confident_score = serializers.FloatField(read_only=True)
     ai_feedback = serializers.JSONField(read_only=True)
@@ -66,6 +73,7 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "subcategory_other",
             "topic",
             "author",
+            "reviewed_by",
             "author_username",
             "campus_name",
             "campus_id",
@@ -76,6 +84,7 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "ai_confident_score",
             "ai_feedback",
             "ai_reviewed_at",
+            "reviewed_at",
         ]
         read_only_fields = [
             "id",

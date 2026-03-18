@@ -25,12 +25,12 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(3*(7)4iok#5%n*zi304f@gqbu=)$w-pa8=uw@dek$w$^v-kh)'
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", 'django-insecure-(3*(7)4iok#5%n*zi304f@gqbu=)$w-pa8=uw@dek$w$^v-kh)')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").strip().lower() in ("1", "true", "yes", "on")
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "campuses",
     "rest_framework",
     "corsheaders",
+    "django_filters",
 ]
 
 # Custom user model (UUID PK); set before first migrate
@@ -64,6 +65,16 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": os.getenv("DRF_THROTTLE_ANON", "100/min"),
+        "user": os.getenv("DRF_THROTTLE_USER", "300/min"),
+    },
+
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.CursorPagination",
     "PAGE_SIZE": 20,
 }
@@ -75,15 +86,17 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
-# CORS: allow credentials (withCredentials) from any origin.
-# Wildcard '*' cannot be used when credentials are included, so we match any origin via regex
-# and the response will echo the request's Origin (required for credentials).
+# CORS: explicit allow-list for app origins.
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGIN_REGEXES = [r"^https?://"]  # any http(s) origin (ngrok, localhost, etc.)
+CORS_ALLOWED_ORIGIN_REGEXES = []
 CORS_ALLOWED_ORIGINS = [
-    "https://www.niatreviews.com",
-    "https://niatreviews.com",
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,https://www.niatreviews.com,https://niatreviews.com",
+    ).split(",")
+    if origin.strip()
 ]
 
 MIDDLEWARE = [
@@ -163,10 +176,27 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:3000,http://localhost:5173,https://www.niatreviews.com,https://niatreviews.com",
+    ).split(",")
+    if origin.strip()
+]
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 # --- Scalability (ready for 2–3k concurrent users) ---
 # Redis cache placeholder: install django-redis and set REDIS_URL in env
 # Then: CACHES["default"]["LOCATION"] = env("REDIS_URL")
-import os
 REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1")
 CACHES = {
     "default": {
@@ -176,10 +206,6 @@ CACHES = {
         # "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
 }
-
-
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -205,3 +231,4 @@ MAIN_APP_URL = os.getenv("MAIN_APP_URL", "http://localhost:3000")
 
 # Groq API for Q&A question category classification (optional)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

@@ -1,17 +1,30 @@
-import logging
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import Article, Category, CATEGORY_CHOICES, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
+from .models import Article, Category, Club, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
 
-logger = logging.getLogger(__name__)
-CATEGORY_VALUES = [c[0] for c in CATEGORY_CHOICES]
+def _get_category_slugs():
+    """Valid category slugs from DB only (no mock/hardcoded list)."""
+    return list(Category.objects.values_list("slug", flat=True))
+
+
 GUIDE_TOPIC_VALUES = [c[0] for c in GUIDE_TOPIC_CHOICES]
 
 
-def _validate_subcategory_for_category(cat, attrs, require_subcategory=False):
-    """Validate subcategory and subcategory_other against Subcategory model for the given category."""
-    subs = list(Subcategory.objects.filter(category=cat).order_by("display_order", "slug"))
+def _validate_subcategory_for_category(cat, attrs, campus_id=None, require_subcategory=False):
+    """
+    Validate subcategory/subcategory_other using campus-aware scope:
+    - Prefer campus-scoped subcategories when present for given category+campus.
+    - Fall back to global subcategories (campus=None).
+    """
+    base_qs = Subcategory.objects.filter(category=cat)
+    campus_scoped_exists = bool(campus_id) and base_qs.filter(campus_id=campus_id).exists()
+    scoped_qs = (
+        base_qs.filter(campus_id=campus_id)
+        if campus_scoped_exists
+        else base_qs.filter(campus__isnull=True)
+    )
+    subs = list(scoped_qs.order_by("display_order", "slug"))
     if not subs:
         return
     valid_slugs = {s.slug for s in subs}
@@ -34,6 +47,61 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "slug"]
+
+
+class ClubListSerializer(serializers.ModelSerializer):
+    campus_id = serializers.UUIDField(read_only=True)
+    campus_name = serializers.CharField(source="campus.name", read_only=True)
+    article_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Club
+        fields = [
+            "id",
+            "campus_id",
+            "campus_name",
+            "name",
+            "slug",
+            "type",
+            "about",
+            "open_to_all",
+            "member_count",
+            "cover_image",
+            "article_count",
+            "is_active",
+            "updated_at",
+        ]
+
+
+class ClubDetailSerializer(serializers.ModelSerializer):
+    campus_id = serializers.UUIDField(read_only=True)
+    campus_name = serializers.CharField(source="campus.name", read_only=True)
+
+    class Meta:
+        model = Club
+        fields = [
+            "id",
+            "campus_id",
+            "campus_name",
+            "name",
+            "slug",
+            "type",
+            "about",
+            "activities",
+            "achievements",
+            "open_to_all",
+            "how_to_join",
+            "email",
+            "instagram",
+            "founded_year",
+            "member_count",
+            "logo_url",
+            "cover_image",
+            "verified_at",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
@@ -59,7 +127,6 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "view_count",
             "is_global_guide",
             "topic",
-            "club_id",
             "subcategory",
             "subcategory_other",
             "author_username",
@@ -87,10 +154,10 @@ class ArticleDetailSerializer(ArticleListSerializer):
 
 
 class ArticleWriteSerializer(serializers.Serializer):
-    campus_id = serializers.IntegerField(allow_null=True, required=False)
+    campus_id = serializers.UUIDField(allow_null=True, required=False)
     campus_name = serializers.CharField(max_length=200, allow_blank=True, required=False)
-    category = serializers.ChoiceField(choices=CATEGORY_VALUES, required=False)
-    category_id = serializers.IntegerField(allow_null=True, required=False)
+    category = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    category_id = serializers.CharField(allow_null=True, required=False)  # UUID from Category model
     title = serializers.CharField(max_length=500, allow_blank=True, required=False)
     excerpt = serializers.CharField(max_length=1000, allow_blank=True, required=False)
     body = serializers.CharField(allow_blank=True, required=False)
@@ -98,7 +165,6 @@ class ArticleWriteSerializer(serializers.Serializer):
     images = serializers.ListField(child=serializers.URLField(allow_blank=True), allow_empty=True, required=False)
     is_global_guide = serializers.BooleanField(default=False, required=False)
     topic = serializers.ChoiceField(choices=GUIDE_TOPIC_VALUES, allow_blank=True, required=False)
-    club_id = serializers.IntegerField(allow_null=True, required=False)
     subcategory = serializers.CharField(max_length=80, allow_blank=True, required=False)
     subcategory_other = serializers.CharField(max_length=200, allow_blank=True, required=False)
     save_as_draft = serializers.BooleanField(default=False, required=False)
@@ -120,110 +186,100 @@ class ArticleWriteSerializer(serializers.Serializer):
         return valid_images
 
     def validate_campus_id(self, value):
-        """Ensure campus_id is a valid integer or None"""
+        """Normalize empty values to None for optional campus binding."""
         if value == "":
             return None
         return value
 
     def validate_category_id(self, value):
-        """Ensure category_id is a valid integer or None"""
-        logger.error(f"[DEBUG] validate_category_id called with value: {value} (type: {type(value)})")
-        
-        if value == "":
-            logger.error("[DEBUG] Converting empty string to None")
+        """Ensure category_id is a valid UUID string or None."""
+        if value is None or value == "":
             return None
-        
-        logger.error(f"[DEBUG] Returning category_id: {value}")
         return value
 
-    def validate_club_id(self, value):
-        """Ensure club_id is a valid integer or None"""
-        if value == "":
-            return None
-        return value
+    def validate_category(self, value):
+        """Ensure category slug exists in Category table (real data only)."""
+        if not (value or "").strip():
+            return value
+        slug = (value or "").strip()
+        valid_slugs = _get_category_slugs()
+        if slug not in valid_slugs:
+            raise serializers.ValidationError(
+                {"category": f"Invalid section. Must be one of: {', '.join(valid_slugs)}."}
+            )
+        return slug
 
     def validate(self, attrs):
-        logger.error(f"[DEBUG] ArticleWriteSerializer.validate called with attrs: {attrs}")
-        
         is_global = attrs.get("is_global_guide", False)
         campus_id = attrs.get("campus_id")
-        campus_name = attrs.get("campus_name", "")
         request = self.context.get("request")
         is_founding_editor = request and getattr(request.user, "role", None) == "founding_editor"
-        
-        logger.error(f"[DEBUG] is_global: {is_global}, campus_id: {campus_id}, is_founding_editor: {is_founding_editor}")
-        
+
         if is_global is True:
             if campus_id is not None:
-                logger.error("[DEBUG] Validation error: campus_id must be null when is_global_guide is True")
                 raise serializers.ValidationError({"campus_id": "Must be null when is_global_guide is True."})
         else:
             if not self.partial and campus_id is None and not attrs.get("save_as_draft") and not is_founding_editor:
-                logger.error("[DEBUG] Validation error: campus_id required")
                 raise serializers.ValidationError({"campus_id": "Please select a campus."})
             if self.partial and "campus_id" in attrs and attrs.get("is_global_guide", True) is False and campus_id is None and not is_founding_editor:
-                logger.error("[DEBUG] Validation error: campus_id required in partial update")
                 raise serializers.ValidationError({"campus_id": "Please select a campus."})
         
         save_as_draft = attrs.get("save_as_draft", False)
         body = attrs.get("body", "")
         category_id = attrs.get("category_id")
-        
-        logger.error(f"[DEBUG] save_as_draft: {save_as_draft}, category_id: {category_id}, category: {attrs.get('category')}")
-        
+        category_slug = (attrs.get("category") or "").strip()
+        resolved_category = None
+
+        # Resolve category from slug when only category (no category_id) is sent
+        if category_slug and category_id is None:
+            try:
+                cat = Category.objects.get(slug=category_slug)
+                attrs["_resolved_category"] = cat
+                resolved_category = cat
+            except Category.DoesNotExist:
+                raise serializers.ValidationError({"category": "Invalid section."})
+
         if not save_as_draft:
             if len((body or "").strip()) < 100:
-                logger.error("[DEBUG] Validation error: body too short")
                 raise serializers.ValidationError({"body": "At least 100 characters required when submitting for review."})
             if not (attrs.get("title") or "").strip():
-                logger.error("[DEBUG] Validation error: title required")
                 raise serializers.ValidationError({"title": "Title is required when submitting for review."})
             if category_id is None and not attrs.get("category"):
-                logger.error("[DEBUG] Validation error: section required")
                 raise serializers.ValidationError({"category_id": "Section is required when submitting for review."})
             if category_id is not None:
-                logger.error(f"[DEBUG] Looking up category with ID: {category_id}")
-                # Debug: List all available categories
-                try:
-                    all_categories = Category.objects.all()
-                    logger.error(f"[DEBUG] Available categories: {[(c.id, c.slug, c.name) for c in all_categories]}")
-                except Exception as e:
-                    logger.error(f"[DEBUG] Error listing categories: {e}")
-                
                 try:
                     cat = Category.objects.get(pk=category_id)
-                    logger.error(f"[DEBUG] Found category: {cat.slug} (ID: {cat.id})")
                     attrs["_resolved_category"] = cat
                     attrs["category"] = cat.slug
-                    _validate_subcategory_for_category(cat, attrs, require_subcategory=True)
+                    resolved_category = cat
+                    _validate_subcategory_for_category(
+                        cat, attrs, campus_id=attrs.get("campus_id"), require_subcategory=True
+                    )
                 except Category.DoesNotExist:
-                    logger.error(f"[DEBUG] Category with ID {category_id} does not exist")
                     raise serializers.ValidationError({"category_id": "Invalid section."})
-                except Exception as e:
-                    logger.error(f"[DEBUG] Unexpected error looking up category: {e}")
-                    raise serializers.ValidationError({"category_id": "Error validating section."})
         elif category_id is not None:
-            logger.error(f"[DEBUG] Draft mode - looking up category with ID: {category_id}")
-            try:
-                all_categories = Category.objects.all()
-                logger.error(f"[DEBUG] Available categories (draft): {[(c.id, c.slug, c.name) for c in all_categories]}")
-            except Exception as e:
-                logger.error(f"[DEBUG] Error listing categories (draft): {e}")
-            
             try:
                 cat = Category.objects.get(pk=category_id)
-                logger.error(f"[DEBUG] Found category for draft: {cat.slug} (ID: {cat.id})")
                 attrs["_resolved_category"] = cat
                 attrs["category"] = cat.slug
-                _validate_subcategory_for_category(cat, attrs, require_subcategory=False)
+                resolved_category = cat
+                _validate_subcategory_for_category(
+                    cat, attrs, campus_id=attrs.get("campus_id"), require_subcategory=False
+                )
             except Category.DoesNotExist:
-                logger.error(f"[DEBUG] Category with ID {category_id} does not exist (draft mode)")
                 raise serializers.ValidationError({"category_id": "Invalid section."})
-            except Exception as e:
-                logger.error(f"[DEBUG] Unexpected error looking up category (draft): {e}")
-                raise serializers.ValidationError({"category_id": "Error validating section."})
-        
-        logger.error(f"[DEBUG] Validation completed successfully. Final attrs: {attrs}")
+
+        if resolved_category is not None and category_id is None:
+            _validate_subcategory_for_category(
+                resolved_category,
+                attrs,
+                campus_id=attrs.get("campus_id"),
+                require_subcategory=not save_as_draft,
+            )
+
+        if resolved_category is None:
+            resolved_category = attrs.get("_resolved_category")
+
         return attrs
 
 

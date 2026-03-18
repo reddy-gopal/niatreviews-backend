@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Subcategory
+from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, Subcategory
 
 
 class SubcategoryInline(admin.TabularInline):
@@ -18,10 +18,26 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Subcategory)
 class SubcategoryAdmin(admin.ModelAdmin):
-    list_display = ("category", "slug", "label", "requires_other", "display_order")
-    list_filter = ("category",)
-    search_fields = ("slug", "label")
-    ordering = ["category", "display_order", "slug"]
+    list_display = ("label", "category", "campus", "slug", "requires_other", "display_order")
+    list_filter = ("category", "campus")
+    search_fields = ("label", "slug")
+    ordering = ["category", "campus", "display_order", "slug"]
+
+
+@admin.register(Club)
+class ClubAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "campus",
+        "type",
+        "open_to_all",
+        "member_count",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = ("campus", "type", "open_to_all", "is_active")
+    search_fields = ("name", "campus__name", "about")
+    prepopulated_fields = {"slug": ["name"]}
 
 
 @admin.register(Article)
@@ -72,7 +88,7 @@ class ArticleAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.status = "published"
             obj.published_at = timezone.now()
-            obj.reviewed_by_id = str(request.user.id)
+            obj.reviewed_by_id = request.user
             obj.reviewed_at = timezone.now()
             obj.save()
         self.message_user(request, f"Published {queryset.count()} article(s).")
@@ -82,7 +98,7 @@ class ArticleAdmin(admin.ModelAdmin):
         for obj in queryset:
             obj.status = "rejected"
             obj.rejection_reason = "Rejected via admin bulk action."
-            obj.reviewed_by_id = str(request.user.id)
+            obj.reviewed_by_id = request.user
             obj.reviewed_at = timezone.now()
             obj.save()
         self.message_user(request, f"Rejected {queryset.count()} article(s).")

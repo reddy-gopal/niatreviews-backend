@@ -12,6 +12,64 @@ CATEGORY_CHOICES = [
     ("amenities", "Amenities"),
 ]
 
+CLUB_TYPE_CHOICES = [
+    ("Coding", "Coding"),
+    ("Cultural", "Cultural"),
+    ("Sports", "Sports"),
+    ("Literary", "Literary"),
+    ("Robotics", "Robotics"),
+    ("Social", "Social"),
+    ("Music", "Music"),
+    ("Dance", "Dance"),
+    ("NIAT Circle", "NIAT Circle"),
+]
+
+
+class Club(models.Model):
+    """Campus club directory entity. Clubs belong to a campus and can have articles."""
+
+    id = models.AutoField(primary_key=True)
+    campus = models.ForeignKey(
+        "campuses.Campus",
+        on_delete=models.CASCADE,
+        related_name="clubs",
+        db_index=True,
+    )
+    name = models.CharField(max_length=160)
+    slug = models.SlugField(max_length=120)
+    type = models.CharField(max_length=40, choices=CLUB_TYPE_CHOICES, db_index=True)
+    about = models.TextField(blank=True)
+    activities = models.TextField(blank=True)
+    achievements = models.TextField(blank=True)
+    open_to_all = models.BooleanField(default=True)
+    how_to_join = models.TextField(blank=True)
+    email = models.EmailField(blank=True)
+    instagram = models.CharField(max_length=120, blank=True)
+    founded_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    member_count = models.PositiveIntegerField(default=0)
+    logo_url = models.URLField(blank=True)
+    cover_image = models.URLField(blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    verified_at = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "articles"
+        db_table = "articles_club"
+        ordering = ["campus", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["campus", "slug"], name="articles_club_campus_slug_uniq"),
+            models.UniqueConstraint(fields=["campus", "name"], name="articles_club_campus_name_uniq"),
+        ]
+        indexes = [
+            models.Index(fields=["campus", "is_active"], name="art_club_campus_active_idx"),
+            models.Index(fields=["type", "is_active"], name="art_club_type_active_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.campus.name})"
+
 
 class Category(models.Model):
     """Section categories for articles. Seeded with 6 default sections."""
@@ -48,6 +106,14 @@ class Subcategory(models.Model):
         related_name="subcategories",
         db_index=True,
     )
+    campus = models.ForeignKey(
+        "campuses.Campus",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="subcategories",
+        db_index=True,
+    )
     slug = models.SlugField(max_length=80)
     label = models.CharField(max_length=120, help_text="Display name")
     requires_other = models.BooleanField(
@@ -59,8 +125,8 @@ class Subcategory(models.Model):
     class Meta:
         app_label = "articles"
         db_table = "articles_subcategory"
-        ordering = ["category", "display_order", "slug"]
-        unique_together = [("category", "slug")]
+        ordering = ["category", "campus", "display_order", "slug"]
+        unique_together = [("category", "campus", "slug")]
         verbose_name_plural = "Subcategories"
 
     def __str__(self):
@@ -130,7 +196,6 @@ class Article(models.Model):
     view_count = models.PositiveIntegerField(default=0, db_index=True)
     is_global_guide = models.BooleanField(default=False)
     topic = models.CharField(max_length=50, choices=GUIDE_TOPIC_CHOICES, blank=True)
-    club_id = models.IntegerField(null=True, blank=True)
     # Club Directory subcategory: slug (e.g. media-club, coding-club, others); when "others", subcategory_other holds custom name
     subcategory = models.CharField(max_length=80, blank=True, db_index=True)
     subcategory_other = models.CharField(max_length=200, blank=True)
@@ -159,10 +224,25 @@ class Article(models.Model):
             models.Index(fields=["status", "is_global_guide"]),
             models.Index(fields=["status", "category"]),
             models.Index(fields=["author_id"]),
+            models.Index(fields=["campus_id", "category", "subcategory", "status"], name="art_camp_cat_sub_st_idx"),
         ]
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        if not (self.slug or "").strip():
+            self.slug = generate_unique_slug(self.title or "article", instance=self)
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def for_club_feed(cls, campus_id, club_slug, status="published"):
+        return cls.objects.filter(
+            campus_id=campus_id,
+            category="club-directory",
+            subcategory=club_slug,
+            status=status,
+        ).order_by("-published_at")
 
 
 def generate_unique_slug(title, instance=None):
