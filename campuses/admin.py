@@ -4,6 +4,6 @@ from .models import Campus
 
 @admin.register(Campus)
 class CampusAdmin(admin.ModelAdmin):
-    list_display = ("name", "short_name", "location", "state", "slug", "is_deemed")
+    list_display = ("name", "short_name", "location", "state", "slug", "is_deemed", "google_map_link")
     list_filter = ("is_deemed", "state")
-    search_fields = ("name", "location", "state")
+    search_fields = ("name", "location", "state", "description")

@@ -15,6 +15,8 @@ class Campus(models.Model):
     location = models.CharField(max_length=200)
     state = models.CharField(max_length=100)
     image_url = models.URLField(max_length=500)
+    google_map_link = models.URLField(max_length=1000, blank=True, null=True)
+    description = models.TextField(blank=True, default="")
     slug = models.SlugField(max_length=120, unique=True)
     is_deemed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
