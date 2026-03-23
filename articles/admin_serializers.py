@@ -34,6 +34,8 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
             "slug",
             "title",
             "status",
+            "meta_title",
+            "meta_description",
             "meta_keywords",
             "created_at",
             "updated_at",
@@ -69,6 +71,7 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
         model = Article
         fields = [
             "id",
+            "slug",
             "title",
             "body",
             "excerpt",
