@@ -1,11 +1,19 @@
 from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Count
 from django.utils import timezone
 
 from .models import Article
-from .admin_serializers import ArticleAdminListSerializer, ArticleAdminDetailSerializer
+from accounts.models import User
+from .admin_serializers import (
+    ArticleAdminListSerializer,
+    ArticleAdminDetailSerializer,
+    AuthorArticleCountSerializer,
+)
 from .permissions import IsAdmin
 
 
@@ -19,7 +27,7 @@ class ArticleAdminViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdmin]
     pagination_class = ArticleAdminPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "category", "campus_id", "featured", "is_global_guide"]
+    filterset_fields = ["status", "category", "campus_id", "author_id", "featured", "is_global_guide", "ai_generated"]
     search_fields = ["title", "author_username", "campus_name"]
     ordering_fields = ["created_at", "updated_at", "upvote_count", "view_count"]
     ordering = ["-created_at"]
@@ -77,3 +85,13 @@ class ArticleAdminViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         instance.delete()
+
+    @action(detail=False, methods=["get"], url_path="authors")
+    def authors(self, request):
+        authors = (
+            User.objects.filter(articles__isnull=False, articles__ai_generated=False)
+            .annotate(article_count=Count("articles"))
+            .order_by("-article_count", "username")
+        )
+        serializer = AuthorArticleCountSerializer(authors, many=True)
+        return Response(serializer.data)

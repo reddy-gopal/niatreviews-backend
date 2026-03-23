@@ -129,6 +129,9 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "topic",
             "subcategory",
             "subcategory_other",
+            "meta_title",
+            "meta_description",
+            "meta_keywords",
             "author_username",
             "published_at",
             "updated_at",
@@ -167,6 +170,13 @@ class ArticleWriteSerializer(serializers.Serializer):
     topic = serializers.ChoiceField(choices=GUIDE_TOPIC_VALUES, allow_blank=True, required=False)
     subcategory = serializers.CharField(max_length=80, allow_blank=True, required=False)
     subcategory_other = serializers.CharField(max_length=200, allow_blank=True, required=False)
+    meta_title = serializers.CharField(max_length=255, allow_blank=True, required=False)
+    meta_description = serializers.CharField(allow_blank=True, required=False)
+    meta_keywords = serializers.ListField(
+        child=serializers.CharField(max_length=120, allow_blank=False),
+        allow_empty=True,
+        required=False,
+    )
     save_as_draft = serializers.BooleanField(default=False, required=False)
 
     def validate_cover_image(self, value):
@@ -184,6 +194,23 @@ class ArticleWriteSerializer(serializers.Serializer):
             if img_url and isinstance(img_url, str) and img_url.strip() and img_url.startswith(('http://', 'https://')):
                 valid_images.append(img_url.strip())
         return valid_images
+
+    def validate_meta_keywords(self, value):
+        """Normalize keywords: trim, drop empties, deduplicate (case-insensitive), cap count."""
+        if not value:
+            return []
+        normalized = []
+        seen = set()
+        for item in value:
+            kw = (item or "").strip()
+            if not kw:
+                continue
+            key = kw.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            normalized.append(kw)
+        return normalized[:25]
 
     def validate_campus_id(self, value):
         """Normalize empty values to None for optional campus binding."""

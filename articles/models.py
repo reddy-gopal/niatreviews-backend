@@ -194,11 +194,15 @@ class Article(models.Model):
     featured = models.BooleanField(default=False)
     upvote_count = models.PositiveIntegerField(default=0, db_index=True)
     view_count = models.PositiveIntegerField(default=0, db_index=True)
+    ai_generated = models.BooleanField(default=False, db_index=True)
     is_global_guide = models.BooleanField(default=False)
     topic = models.CharField(max_length=50, choices=GUIDE_TOPIC_CHOICES, blank=True)
     # Club Directory subcategory: slug (e.g. media-club, coding-club, others); when "others", subcategory_other holds custom name
     subcategory = models.CharField(max_length=80, blank=True, db_index=True)
     subcategory_other = models.CharField(max_length=200, blank=True)
+    meta_title = models.CharField(max_length = 255, blank = True)
+    meta_description = models.TextField(blank = True)
+    meta_keywords = models.JSONField(default=list, blank=True, help_text="SEO keywords list")
     rejection_reason = models.TextField(blank=True)
     reviewed_by_id = models.ForeignKey(
         settings.AUTH_USER_MODEL,

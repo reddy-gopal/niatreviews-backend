@@ -9,6 +9,14 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email"]
 
 
+class AuthorArticleCountSerializer(serializers.ModelSerializer):
+    article_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "article_count"]
+
+
 class ArticleAdminListSerializer(serializers.ModelSerializer):
     author = AuthorSerializer(source="author_id", read_only=True)
     reviewed_by = AuthorSerializer(source="reviewed_by_id", read_only=True)
@@ -26,6 +34,7 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
             "slug",
             "title",
             "status",
+            "meta_keywords",
             "created_at",
             "updated_at",
             "category",
@@ -36,6 +45,7 @@ class ArticleAdminListSerializer(serializers.ModelSerializer):
             "campus_slug",
             "upvote_count",
             "view_count",
+            "ai_generated",
             "featured",
             "ai_confident_score",
             "ai_feedback",
@@ -71,6 +81,9 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "category_fk",
             "subcategory",
             "subcategory_other",
+            "meta_title",
+            "meta_description",
+            "meta_keywords",
             "topic",
             "author",
             "reviewed_by",
@@ -79,6 +92,7 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "campus_id",
             "upvote_count",
             "view_count",
+            "ai_generated",
             "cover_image",
             "images",
             "ai_confident_score",

@@ -223,6 +223,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
             topic=data.get("topic") or "",
             subcategory=(data.get("subcategory") or "").strip() or "",
             subcategory_other=(data.get("subcategory_other") or "").strip() or "",
+            meta_title=(data.get("meta_title") or "").strip() or "",
+            meta_description=(data.get("meta_description") or "").strip() or "",
+            meta_keywords=data.get("meta_keywords", []),
         )
         article.save()
         return Response(ArticleDetailSerializer(article).data, status=status.HTTP_201_CREATED)
@@ -234,7 +237,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
             if instance.status not in ("draft", "pending_review", "rejected"):
                 return Response({"detail": "Cannot edit published article."}, status=status.HTTP_400_BAD_REQUEST)
             data_copy = {k: v for k, v in request.data.items() if k in (
-                "campus_id", "campus_name", "category", "category_id", "title", "excerpt", "body", "cover_image", "images", "is_global_guide", "topic", "subcategory", "subcategory_other"
+                "campus_id", "campus_name", "category", "category_id", "title", "excerpt", "body", "cover_image", "images", "is_global_guide", "topic", "subcategory", "subcategory_other", "meta_title", "meta_description", "meta_keywords"
             )}
             if getattr(request.user, "role", None) == "founding_editor":
                 try:
@@ -266,10 +269,12 @@ class ArticleViewSet(viewsets.ModelViewSet):
         if "campus_id" in data:
             instance.campus_id_id = data["campus_id"]
 
-        for key in ("campus_name", "category", "title", "excerpt", "body", "cover_image", "is_global_guide", "topic", "subcategory", "subcategory_other"):
+        for key in ("campus_name", "category", "title", "excerpt", "body", "cover_image", "is_global_guide", "topic", "subcategory", "subcategory_other", "meta_title", "meta_description", "meta_keywords"):
             if key in data:
                 val = data[key]
                 if key in ("subcategory", "subcategory_other"):
+                    setattr(instance, key, (val or "").strip() or "")
+                elif key in ("meta_title", "meta_description"):
                     setattr(instance, key, (val or "").strip() or "")
                 elif key != "body" or body_str is None:
                     setattr(instance, key, val)
