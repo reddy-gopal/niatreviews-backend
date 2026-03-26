@@ -644,7 +644,7 @@ class CampusArticleStatusBreakdownView(APIView):
     GET /api/articles/stats/campus-status-breakdown/
     Returns per-campus article totals and status-wise counts, ordered by total desc.
     """
-    permission_classes = [IsModerator]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         known_statuses = [choice[0] for choice in Article._meta.get_field("status").choices]

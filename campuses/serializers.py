@@ -9,6 +9,7 @@ class CampusSerializer(serializers.ModelSerializer):
     imageUrl = serializers.URLField(source="image_url")
     isDeemed = serializers.BooleanField(source="is_deemed")
     googleMapLink = serializers.URLField(source="google_map_link", allow_null=True, required=False)
+    articleCount = serializers.IntegerField(source="article_count", read_only=True, required=False)
 
     class Meta:
         model = Campus
@@ -23,4 +24,5 @@ class CampusSerializer(serializers.ModelSerializer):
             "isDeemed",
             "googleMapLink",
             "description",
+            "articleCount",
         ]
