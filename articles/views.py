@@ -637,3 +637,49 @@ class CampusArticleBreakdownView(APIView):
             breakdown[campus]["article_count"] += row["article_count"]
             breakdown[campus]["authors"].append({"username": row["author_username"], "article_count": row["article_count"]})
         return Response(breakdown, status=status.HTTP_200_OK)
+
+
+class CampusArticleStatusBreakdownView(APIView):
+    """
+    GET /api/articles/stats/campus-status-breakdown/
+    Returns per-campus article totals and status-wise counts, ordered by total desc.
+    """
+    permission_classes = [IsModerator]
+
+    def get(self, request):
+        known_statuses = [choice[0] for choice in Article._meta.get_field("status").choices]
+
+        rows = (
+            Article.objects
+            .values("campus_id_id", "campus_name", "status")
+            .annotate(article_count=Count("id"))
+            .order_by()
+        )
+
+        breakdown = {}
+        for row in rows:
+            campus_id = str(row["campus_id_id"]) if row["campus_id_id"] else None
+            campus_name = row["campus_name"] or "Unknown"
+            key = campus_id or f"unknown::{campus_name}"
+
+            if key not in breakdown:
+                breakdown[key] = {
+                    "campus_id": campus_id,
+                    "campus_name": campus_name,
+                    "total_articles": 0,
+                    "status_counts": {status_key: 0 for status_key in known_statuses},
+                }
+
+            status_key = row["status"] or "unknown"
+            if status_key not in breakdown[key]["status_counts"]:
+                breakdown[key]["status_counts"][status_key] = 0
+
+            count = row["article_count"] or 0
+            breakdown[key]["status_counts"][status_key] += count
+            breakdown[key]["total_articles"] += count
+
+        data = sorted(
+            breakdown.values(),
+            key=lambda item: (-item["total_articles"], item["campus_name"].lower()),
+        )
+        return Response(data, status=status.HTTP_200_OK)

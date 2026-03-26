@@ -8,6 +8,7 @@ from .views import (
     CategoryListView,
     SubcategoryListView,
     CampusArticleBreakdownView,
+    CampusArticleStatusBreakdownView,
     ArticleUpvoteView,
     ArticleUpvoteStatusView,
     ArticleSuggestView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path("articles/<str:article_id>/view/", ArticleViewIncrementView.as_view(), name="article-view"),
     path("articles/<str:article_id>/suggestions/", ArticleSuggestionsListView.as_view(), name="article-suggestions-list"),
     path("stats/campus-breakdown/", CampusArticleBreakdownView.as_view()),
+    path("stats/campus-status-breakdown/", CampusArticleStatusBreakdownView.as_view(), name="campus-status-breakdown"),
     path("admin/", include("articles.admin_urls")),
     path("", include(router.urls)),
 ]
