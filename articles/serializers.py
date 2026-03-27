@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
 
+from accounts.models import FoundingEditorProfile
 from .models import Article, Category, Club, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
 
 def _get_category_slugs():
@@ -107,6 +108,7 @@ class ClubDetailSerializer(serializers.ModelSerializer):
 class ArticleListSerializer(serializers.ModelSerializer):
     updated_days = serializers.SerializerMethodField()
     category_id = serializers.SerializerMethodField()
+    author_linkedin_profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Article
@@ -133,6 +135,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
             "meta_description",
             "meta_keywords",
             "author_username",
+            "author_linkedin_profile",
             "published_at",
             "updated_at",
             "updated_days",
@@ -144,6 +147,18 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
     def get_category_id(self, obj):
         return obj.category_fk_id
+
+    def get_author_linkedin_profile(self, obj):
+        linkedin = (
+            FoundingEditorProfile.objects
+            .filter(user__username=obj.author_username)
+            .values_list("linkedin_profile", flat=True)
+            .first()
+        )
+        if not linkedin:
+            return None
+        value = str(linkedin).strip()
+        return value or None
 
 
 class ArticleDetailSerializer(ArticleListSerializer):

@@ -11,10 +11,20 @@ class AuthorSerializer(serializers.ModelSerializer):
 
 class AuthorArticleCountSerializer(serializers.ModelSerializer):
     article_count = serializers.IntegerField(read_only=True)
+    campus_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "article_count"]
+        fields = ["id", "username", "email", "article_count", "campus_name"]
+
+    def get_campus_name(self, obj):
+        if hasattr(obj, "founding_editor_profile") and obj.founding_editor_profile.campus_name:
+            return obj.founding_editor_profile.campus_name
+        
+        first_article = obj.articles.filter(campus_name__isnull=False).exclude(campus_name="").first()
+        if first_article:
+            return first_article.campus_name
+        return "Unknown"
 
 
 class ArticleAdminListSerializer(serializers.ModelSerializer):

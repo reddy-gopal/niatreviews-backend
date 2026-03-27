@@ -90,7 +90,8 @@ class ArticleAdminViewSet(viewsets.ModelViewSet):
     def authors(self, request):
         authors = (
             User.objects.filter(articles__isnull=False, articles__ai_generated=False)
-            .annotate(article_count=Count("articles"))
+            .prefetch_related("founding_editor_profile", "articles")
+            .annotate(article_count=Count("id"))
             .order_by("-article_count", "username")
         )
         serializer = AuthorArticleCountSerializer(authors, many=True)
