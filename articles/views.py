@@ -13,10 +13,10 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db.models import Count, F, Q, OuterRef, Subquery, IntegerField, Value
+from django.db.models import Count, F, Q, OuterRef, Subquery, IntegerField, Value, Prefetch, Sum
 from django.db.models.functions import Coalesce
 
-from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, Subcategory, generate_unique_slug
+from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, ClubCampus, Subcategory, generate_unique_slug
 from accounts.models import FoundingEditorProfile
 from .permissions import IsAuthorOrModerator, IsModerator
 from .serializers import (
@@ -28,6 +28,20 @@ from .serializers import (
     CategorySerializer,
     ModerationSerializer,
 )
+
+
+def _resolve_profile_campus_uuid(request):
+    """Return logged-in founding editor campus UUID (or None)."""
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return None
+    try:
+        profile = FoundingEditorProfile.objects.only("campus_id").get(user=user)
+    except FoundingEditorProfile.DoesNotExist:
+        return None
+    campus_fk = getattr(profile, "campus_id", None)
+    return campus_fk.id if campus_fk is not None else None
+
 
 def extract_image_urls_from_html(body):
     """Extract all img src URLs from HTML body. Returns list of strings."""
@@ -98,6 +112,9 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 | Q(subcategory__icontains=search)
                 | Q(subcategory_other__icontains=search)
             )
+        author_username = (self.request.query_params.get("author_username") or "").strip()
+        if author_username:
+            qs = qs.filter(author_username__iexact=author_username)
         updated_since_days = self.request.query_params.get("updated_since_days")
         if updated_since_days:
             try:
@@ -340,29 +357,63 @@ class ArticleViewSet(viewsets.ModelViewSet):
 class ClubViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
     pagination_class = ArticlePageNumberPagination
+    lookup_field = "slug"
+    lookup_value_regex = "[^/]+"
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
+        if lookup_value is None:
+            raise Http404
+        obj = queryset.filter(slug=lookup_value).first()
+        if obj is None:
+            try:
+                obj = queryset.filter(pk=int(lookup_value)).first()
+            except (TypeError, ValueError):
+                obj = None
+        if obj is None:
+            raise Http404
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_queryset(self):
-        qs = Club.objects.select_related("campus").all()
+        qs = Club.objects.all()
         campus = self.request.query_params.get("campus")
+        campus_uuid = None
         if campus:
             try:
                 campus_uuid = uuid.UUID(str(campus))
-                qs = qs.filter(campus_id=campus_uuid)
             except (ValueError, TypeError):
                 pass
+        if campus_uuid is None:
+            campus_uuid = _resolve_profile_campus_uuid(self.request)
+        if campus_uuid is not None:
+            qs = qs.filter(
+                campus_chapters__campus_id=campus_uuid,
+                campus_chapters__is_active=True,
+            )
+            qs = qs.prefetch_related(
+                Prefetch(
+                    "campus_chapters",
+                    queryset=ClubCampus.objects.filter(campus_id=campus_uuid),
+                    to_attr="current_chapter",
+                )
+            )
+        else:
+            qs = qs.prefetch_related("campus_chapters__campus")
         club_type = (self.request.query_params.get("type") or "").strip()
         if club_type:
             qs = qs.filter(type=club_type)
         open_to_all = self.request.query_params.get("open_to_all")
         if open_to_all is not None:
-            qs = qs.filter(open_to_all=open_to_all.lower() in ("true", "1", "yes"))
+            qs = qs.filter(campus_chapters__open_to_all=open_to_all.lower() in ("true", "1", "yes"))
         search = (self.request.query_params.get("search") or "").strip()
         if search:
             qs = qs.filter(
                 Q(name__icontains=search)
                 | Q(about__icontains=search)
                 | Q(activities__icontains=search)
-                | Q(campus__name__icontains=search)
+                | Q(campus_chapters__campus__name__icontains=search)
             )
 
         include_inactive = self.request.query_params.get("include_inactive", "").lower() in ("true", "1", "yes")
@@ -371,14 +422,16 @@ class ClubViewSet(viewsets.ModelViewSet):
         if not is_moderator or not include_inactive:
             qs = qs.filter(is_active=True)
 
-        # club_id FK was removed from Article; count via campus + club slug mapping
+        # article association remains campus + subcategory(club slug).
+        article_filters = {
+            "status": "published",
+            "category": "club-directory",
+            "subcategory": OuterRef("slug"),
+        }
+        if campus_uuid is not None:
+            article_filters["campus_id_id"] = campus_uuid
         published_count_subquery = (
-            Article.objects.filter(
-                status="published",
-                category="club-directory",
-                campus_id_id=OuterRef("campus_id"),
-                subcategory=OuterRef("slug"),
-            )
+            Article.objects.filter(**article_filters)
             .values("subcategory")
             .annotate(total=Count("id"))
             .values("total")[:1]
@@ -388,7 +441,7 @@ class ClubViewSet(viewsets.ModelViewSet):
                 Subquery(published_count_subquery, output_field=IntegerField()),
                 Value(0),
             )
-        ).order_by("name")
+        ).distinct().order_by("name")
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -428,6 +481,8 @@ class SubcategoryListView(APIView):
                 campus_uuid = uuid.UUID(str(campus_id))
             except (ValueError, TypeError):
                 campus_uuid = None
+        if campus_uuid is None:
+            campus_uuid = _resolve_profile_campus_uuid(request)
         if not category_slug and not category_id:
             return Response([], status=status.HTTP_200_OK)
         try:
@@ -437,6 +492,29 @@ class SubcategoryListView(APIView):
                 cat = Category.objects.get(slug=category_slug)
         except (Category.DoesNotExist, ValueError, TypeError):
             return Response([], status=status.HTTP_200_OK)
+
+        if cat.slug == "club-directory":
+            if not campus_uuid:
+                return Response(
+                    {"detail": "campus_id is required for club-directory."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            chapters = (
+                ClubCampus.objects.filter(
+                    campus_id=campus_uuid,
+                    is_active=True,
+                    club__is_active=True,
+                )
+                .select_related("club")
+                .order_by("club__name")
+                .values("club__slug", "club__name")
+                .distinct()
+            )
+            data = [
+                {"slug": c["club__slug"], "label": c["club__name"], "requires_other": False}
+                for c in chapters
+            ]
+            return Response(data)
 
         qs = Subcategory.objects.filter(category=cat)
         if campus_uuid:
@@ -683,3 +761,48 @@ class CampusArticleStatusBreakdownView(APIView):
             key=lambda item: (-item["total_articles"], item["campus_name"].lower()),
         )
         return Response(data, status=status.HTTP_200_OK)
+
+
+class LeaderboardView(APIView):
+    """
+    GET /api/articles/articles/leaderboard/?campus_id=<uuid>
+    Returns top writers for a campus by total views, then article count.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        campus_id = request.query_params.get("campus_id")
+        if not campus_id:
+            return Response([], status=status.HTTP_200_OK)
+
+        try:
+            campus_uuid = uuid.UUID(str(campus_id))
+        except (ValueError, TypeError):
+            return Response({"detail": "Invalid campus_id."}, status=status.HTTP_400_BAD_REQUEST)
+
+        rows = (
+            Article.objects
+            .filter(
+                status="published",
+                campus_id_id=campus_uuid,
+                author_id__isnull=False,
+            )
+            .values("author_username")
+            .annotate(
+                article_count=Count("id"),
+                total_views=Coalesce(Sum("view_count"), Value(0)),
+            )
+            .order_by("-total_views", "-article_count", "author_username")[:10]
+        )
+
+        return Response(
+            [
+                {
+                    "author_username": row["author_username"],
+                    "article_count": int(row["article_count"] or 0),
+                    "total_views": int(row["total_views"] or 0),
+                }
+                for row in rows
+            ],
+            status=status.HTTP_200_OK,
+        )

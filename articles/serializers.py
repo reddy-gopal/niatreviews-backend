@@ -2,7 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from accounts.models import FoundingEditorProfile
-from .models import Article, Category, Club, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
+from .models import Article, Category, Club, ClubCampus, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
 
 def _get_category_slugs():
     """Valid category slugs from DB only (no mock/hardcoded list)."""
@@ -18,6 +18,31 @@ def _validate_subcategory_for_category(cat, attrs, campus_id=None, require_subca
     - Prefer campus-scoped subcategories when present for given category+campus.
     - Fall back to global subcategories (campus=None).
     """
+    # club-directory subcategories are dynamic from Club table (campus-scoped via M2M)
+    if cat.slug == "club-directory":
+        sub = (attrs.get("subcategory") or "").strip()
+        if require_subcategory and not sub:
+            raise serializers.ValidationError(
+                {"subcategory": f"Please select a subcategory for {cat.name}."}
+            )
+        if not sub:
+            return
+        if not campus_id:
+            raise serializers.ValidationError(
+                {"campus_id": "Please select a campus for club-directory articles."}
+            )
+        exists = ClubCampus.objects.filter(
+            club__slug=sub,
+            campus_id=campus_id,
+            is_active=True,
+            club__is_active=True,
+        ).exists()
+        if not exists:
+            raise serializers.ValidationError(
+                {"subcategory": "This club does not have an active chapter at the selected campus."}
+            )
+        return
+
     base_qs = Subcategory.objects.filter(category=cat)
     campus_scoped_exists = bool(campus_id) and base_qs.filter(campus_id=campus_id).exists()
     scoped_qs = (
@@ -51,8 +76,16 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ClubListSerializer(serializers.ModelSerializer):
-    campus_id = serializers.UUIDField(read_only=True)
-    campus_name = serializers.CharField(source="campus.name", read_only=True)
+    objective = serializers.CharField(source="about", read_only=True)
+    campus_id = serializers.SerializerMethodField()
+    campus_name = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
+    open_to_all = serializers.SerializerMethodField()
+    president_name = serializers.SerializerMethodField()
+    vice_president_name = serializers.SerializerMethodField()
+    chapter_description = serializers.SerializerMethodField()
+    contact_email = serializers.SerializerMethodField()
+    chapter_is_active = serializers.SerializerMethodField()
     article_count = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -64,42 +97,111 @@ class ClubListSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "type",
+            "objective",
             "about",
-            "open_to_all",
             "member_count",
+            "open_to_all",
+            "president_name",
+            "vice_president_name",
+            "chapter_description",
+            "contact_email",
+            "chapter_is_active",
             "cover_image",
             "article_count",
             "is_active",
             "updated_at",
         ]
 
+    def _current_chapter(self, obj):
+        chapter_list = getattr(obj, "current_chapter", None)
+        if chapter_list:
+            return chapter_list[0]
+        return None
+
+    def get_member_count(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.member_count if chapter else 0
+
+    def get_campus_id(self, obj):
+        chapter = self._current_chapter(obj)
+        return str(chapter.campus_id) if chapter else None
+
+    def get_campus_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.campus.name if chapter else ""
+
+    def get_open_to_all(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.open_to_all if chapter else False
+
+    def get_president_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.president_name if chapter else ""
+
+    def get_vice_president_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.vice_president_name if chapter else ""
+
+    def get_chapter_description(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.chapter_description if chapter else ""
+
+    def get_contact_email(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.contact_email if chapter else ""
+
+    def get_chapter_is_active(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.is_active if chapter else False
+
+
+class ClubCampusSerializer(serializers.ModelSerializer):
+    campus_id = serializers.UUIDField(source="campus.id", read_only=True)
+    campus_name = serializers.CharField(source="campus.name", read_only=True)
+
+    class Meta:
+        model = ClubCampus
+        fields = [
+            "campus_id",
+            "campus_name",
+            "member_count",
+            "open_to_all",
+            "president_name",
+            "president_email",
+            "president_photo",
+            "vice_president_name",
+            "vice_president_email",
+            "vice_president_photo",
+            "chapter_description",
+            "contact_email",
+            "is_active",
+            "updated_at",
+        ]
+
 
 class ClubDetailSerializer(serializers.ModelSerializer):
-    campus_id = serializers.UUIDField(read_only=True)
-    campus_name = serializers.CharField(source="campus.name", read_only=True)
+    campus_chapters = ClubCampusSerializer(many=True, read_only=True)
+    objective = serializers.CharField(source="about", read_only=True)
 
     class Meta:
         model = Club
         fields = [
             "id",
-            "campus_id",
-            "campus_name",
             "name",
             "slug",
             "type",
+            "objective",
             "about",
             "activities",
             "achievements",
-            "open_to_all",
             "how_to_join",
-            "email",
             "instagram",
             "founded_year",
-            "member_count",
             "logo_url",
             "cover_image",
             "verified_at",
             "is_active",
+            "campus_chapters",
             "created_at",
             "updated_at",
         ]

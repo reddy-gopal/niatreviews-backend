@@ -65,6 +65,62 @@ class PublicProfileSerializer(serializers.ModelSerializer):
         return _get_is_followed_by_me(self.context.get("request"), obj)
 
 
+class AuthorProfileSerializer(serializers.ModelSerializer):
+    """Public author profile with optional Founding Editor metadata."""
+    follower_count = serializers.SerializerMethodField()
+    is_followed_by_me = serializers.SerializerMethodField()
+    linkedin_profile = serializers.SerializerMethodField()
+    campus_id = serializers.SerializerMethodField()
+    campus_name = serializers.SerializerMethodField()
+    year_joined = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "role",
+            "is_verified_senior",
+            "follower_count",
+            "is_followed_by_me",
+            "linkedin_profile",
+            "campus_id",
+            "campus_name",
+            "year_joined",
+        ]
+        read_only_fields = fields
+
+    def get_follower_count(self, obj):
+        return _get_senior_follower_count(obj)
+
+    def get_is_followed_by_me(self, obj):
+        return _get_is_followed_by_me(self.context.get("request"), obj)
+
+    def _get_fe_profile(self, obj):
+        try:
+            return obj.founding_editor_profile
+        except FoundingEditorProfile.DoesNotExist:
+            return None
+
+    def get_linkedin_profile(self, obj):
+        profile = self._get_fe_profile(obj)
+        return profile.linkedin_profile if profile else ""
+
+    def get_campus_id(self, obj):
+        profile = self._get_fe_profile(obj)
+        if not profile or profile.campus_id is None:
+            return None
+        return str(profile.campus_id_id)
+
+    def get_campus_name(self, obj):
+        profile = self._get_fe_profile(obj)
+        return profile.campus_name if profile else ""
+
+    def get_year_joined(self, obj):
+        profile = self._get_fe_profile(obj)
+        return profile.year_joined if profile else None
+
+
 class FoundingEditorProfileSerializer(serializers.ModelSerializer):
     """GET/PATCH current user's Founding Editor profile (campus, LinkedIn, year_joined)."""
     class Meta:

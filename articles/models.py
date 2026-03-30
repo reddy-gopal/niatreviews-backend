@@ -26,27 +26,24 @@ CLUB_TYPE_CHOICES = [
 
 
 class Club(models.Model):
-    """Campus club directory entity. Clubs belong to a campus and can have articles."""
+    """Club directory entity that can be shared across multiple campuses."""
 
     id = models.AutoField(primary_key=True)
-    campus = models.ForeignKey(
+    campuses = models.ManyToManyField(
         "campuses.Campus",
-        on_delete=models.CASCADE,
+        through="ClubCampus",
         related_name="clubs",
-        db_index=True,
+        blank=True,
     )
     name = models.CharField(max_length=160)
-    slug = models.SlugField(max_length=120)
+    slug = models.SlugField(max_length=120, unique=True)
     type = models.CharField(max_length=40, choices=CLUB_TYPE_CHOICES, db_index=True)
     about = models.TextField(blank=True)
     activities = models.TextField(blank=True)
     achievements = models.TextField(blank=True)
-    open_to_all = models.BooleanField(default=True)
     how_to_join = models.TextField(blank=True)
-    email = models.EmailField(blank=True)
     instagram = models.CharField(max_length=120, blank=True)
     founded_year = models.PositiveSmallIntegerField(null=True, blank=True)
-    member_count = models.PositiveIntegerField(default=0)
     logo_url = models.URLField(blank=True)
     cover_image = models.URLField(blank=True)
     is_active = models.BooleanField(default=True, db_index=True)
@@ -57,18 +54,52 @@ class Club(models.Model):
     class Meta:
         app_label = "articles"
         db_table = "articles_club"
-        ordering = ["campus", "name"]
-        constraints = [
-            models.UniqueConstraint(fields=["campus", "slug"], name="articles_club_campus_slug_uniq"),
-            models.UniqueConstraint(fields=["campus", "name"], name="articles_club_campus_name_uniq"),
-        ]
+        ordering = ["name"]
         indexes = [
-            models.Index(fields=["campus", "is_active"], name="art_club_campus_active_idx"),
             models.Index(fields=["type", "is_active"], name="art_club_type_active_idx"),
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.campus.name})"
+        return self.name
+
+
+class ClubCampus(models.Model):
+    """Campus chapter metadata for a club (one row per club-campus pair)."""
+
+    club = models.ForeignKey(
+        Club,
+        on_delete=models.CASCADE,
+        related_name="campus_chapters",
+    )
+    campus = models.ForeignKey(
+        "campuses.Campus",
+        on_delete=models.CASCADE,
+        related_name="club_chapters",
+    )
+
+    member_count = models.PositiveIntegerField(default=0)
+    open_to_all = models.BooleanField(default=True)
+
+    president_name = models.CharField(max_length=255, blank=True)
+    president_email = models.EmailField(blank=True)
+    president_photo = models.ImageField(upload_to="club_leaders/", null=True, blank=True)
+    vice_president_name = models.CharField(max_length=255, blank=True)
+    vice_president_email = models.EmailField(blank=True)
+    vice_president_photo = models.ImageField(upload_to="club_leaders/", null=True, blank=True)
+
+    chapter_description = models.TextField(blank=True)
+    contact_email = models.EmailField(blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "articles"
+        db_table = "articles_club_campus"
+        unique_together = [("club", "campus")]
+        ordering = ["club__name"]
+
+    def __str__(self):
+        return f"{self.club.name} @ {self.campus.name}"
 
 
 class Category(models.Model):

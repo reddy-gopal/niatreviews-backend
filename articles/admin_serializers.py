@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Article
+from .models import Article, ClubCampus
 from accounts.models import User
 
 
@@ -112,6 +112,35 @@ class ArticleAdminDetailSerializer(serializers.ModelSerializer):
             "ai_feedback",
             "ai_reviewed_at",
             "reviewed_at",
+        ]
+
+
+class ClubCampusAdminSerializer(serializers.ModelSerializer):
+    club_name = serializers.CharField(source="club.name", read_only=True)
+    club_slug = serializers.CharField(source="club.slug", read_only=True)
+    campus_name = serializers.CharField(source="campus.name", read_only=True)
+
+    class Meta:
+        model = ClubCampus
+        fields = [
+            "id",
+            "club",
+            "club_name",
+            "club_slug",
+            "campus",
+            "campus_name",
+            "member_count",
+            "open_to_all",
+            "president_name",
+            "president_email",
+            "president_photo",
+            "vice_president_name",
+            "vice_president_email",
+            "vice_president_photo",
+            "chapter_description",
+            "contact_email",
+            "is_active",
+            "updated_at",
         ]
         read_only_fields = [
             "id",

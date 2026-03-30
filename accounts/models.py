@@ -67,6 +67,17 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+    def save(self, *args, **kwargs):
+        """
+        Normalize optional email so blanks are always stored as NULL.
+        This prevents unique conflicts on empty strings and keeps behavior
+        consistent across all create/update paths.
+        """
+        if isinstance(self.email, str):
+            normalized = self.email.strip()
+            self.email = normalized or None
+        super().save(*args, **kwargs)
+
 
 class FoundingEditorProfile(models.Model):
     """

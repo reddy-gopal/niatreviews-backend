@@ -14,6 +14,7 @@ from .views import (
     ArticleSuggestView,
     ArticleViewIncrementView,
     ArticleSuggestionsListView,
+    LeaderboardView,
 )
 router = DefaultRouter()
 router.register(r"articles", ArticleViewSet, basename="article")
@@ -28,6 +29,7 @@ urlpatterns = [
     path("articles/<str:article_id>/suggest/", ArticleSuggestView.as_view(), name="article-suggest"),
     path("articles/<str:article_id>/view/", ArticleViewIncrementView.as_view(), name="article-view"),
     path("articles/<str:article_id>/suggestions/", ArticleSuggestionsListView.as_view(), name="article-suggestions-list"),
+    path("articles/leaderboard/", LeaderboardView.as_view(), name="article-leaderboard"),
     path("stats/campus-breakdown/", CampusArticleBreakdownView.as_view()),
     path("stats/campus-status-breakdown/", CampusArticleStatusBreakdownView.as_view(), name="campus-status-breakdown"),
     path("admin/", include("articles.admin_urls")),

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils import timezone
-from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, Subcategory
+from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, ClubCampus, Subcategory
 
 
 class SubcategoryInline(admin.TabularInline):
@@ -28,16 +28,28 @@ class SubcategoryAdmin(admin.ModelAdmin):
 class ClubAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "campus",
         "type",
-        "open_to_all",
-        "member_count",
         "is_active",
         "updated_at",
     )
-    list_filter = ("campus", "type", "open_to_all", "is_active")
-    search_fields = ("name", "campus__name", "about")
+    list_filter = ("type", "is_active")
+    search_fields = ("name", "campuses__name", "about")
     prepopulated_fields = {"slug": ["name"]}
+
+
+@admin.register(ClubCampus)
+class ClubCampusAdmin(admin.ModelAdmin):
+    list_display = (
+        "club",
+        "campus",
+        "member_count",
+        "president_name",
+        "vice_president_name",
+        "is_active",
+        "updated_at",
+    )
+    list_filter = ("campus", "club", "is_active", "open_to_all")
+    search_fields = ("club__name", "club__slug", "campus__name", "president_name", "vice_president_name")
 
 
 @admin.register(Article)

@@ -7,12 +7,13 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
 from django.utils import timezone
 
-from .models import Article
+from .models import Article, ClubCampus
 from accounts.models import User
 from .admin_serializers import (
     ArticleAdminListSerializer,
     ArticleAdminDetailSerializer,
     AuthorArticleCountSerializer,
+    ClubCampusAdminSerializer,
 )
 from .permissions import IsAdmin
 
@@ -96,3 +97,16 @@ class ArticleAdminViewSet(viewsets.ModelViewSet):
         )
         serializer = AuthorArticleCountSerializer(authors, many=True)
         return Response(serializer.data)
+
+
+class ClubCampusAdminViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = ClubCampusAdminSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ["club", "campus", "is_active", "open_to_all"]
+    search_fields = ["club__name", "club__slug", "campus__name", "president_name", "vice_president_name"]
+    ordering_fields = ["updated_at", "member_count"]
+    ordering = ["club__name", "campus__name"]
+
+    def get_queryset(self):
+        return ClubCampus.objects.select_related("club", "campus").all()
