@@ -12,19 +12,6 @@ CATEGORY_CHOICES = [
     ("amenities", "Amenities"),
 ]
 
-CLUB_TYPE_CHOICES = [
-    ("Coding", "Coding"),
-    ("Cultural", "Cultural"),
-    ("Sports", "Sports"),
-    ("Literary", "Literary"),
-    ("Robotics", "Robotics"),
-    ("Social", "Social"),
-    ("Music", "Music"),
-    ("Dance", "Dance"),
-    ("NIAT Circle", "NIAT Circle"),
-]
-
-
 class Club(models.Model):
     """Club directory entity that can be shared across multiple campuses."""
 
@@ -37,17 +24,10 @@ class Club(models.Model):
     )
     name = models.CharField(max_length=160)
     slug = models.SlugField(max_length=120, unique=True)
-    type = models.CharField(max_length=40, choices=CLUB_TYPE_CHOICES, db_index=True)
-    about = models.TextField(blank=True)
-    activities = models.TextField(blank=True)
-    achievements = models.TextField(blank=True)
-    how_to_join = models.TextField(blank=True)
-    instagram = models.CharField(max_length=120, blank=True)
-    founded_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    objective = models.TextField(blank=True)
     logo_url = models.URLField(blank=True)
     cover_image = models.URLField(blank=True)
     is_active = models.BooleanField(default=True, db_index=True)
-    verified_at = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -55,9 +35,6 @@ class Club(models.Model):
         app_label = "articles"
         db_table = "articles_club"
         ordering = ["name"]
-        indexes = [
-            models.Index(fields=["type", "is_active"], name="art_club_type_active_idx"),
-        ]
 
     def __str__(self):
         return self.name
@@ -86,6 +63,8 @@ class ClubCampus(models.Model):
     vice_president_name = models.CharField(max_length=255, blank=True)
     vice_president_email = models.EmailField(blank=True)
     vice_president_photo = models.ImageField(upload_to="club_leaders/", null=True, blank=True)
+    instagram = models.URLField(blank=True)
+    linkedin = models.URLField(blank=True)
 
     chapter_description = models.TextField(blank=True)
     contact_email = models.EmailField(blank=True)

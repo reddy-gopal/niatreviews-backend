@@ -76,13 +76,14 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ClubListSerializer(serializers.ModelSerializer):
-    objective = serializers.CharField(source="about", read_only=True)
     campus_id = serializers.SerializerMethodField()
     campus_name = serializers.SerializerMethodField()
     member_count = serializers.SerializerMethodField()
     open_to_all = serializers.SerializerMethodField()
     president_name = serializers.SerializerMethodField()
     vice_president_name = serializers.SerializerMethodField()
+    instagram = serializers.SerializerMethodField()
+    linkedin = serializers.SerializerMethodField()
     chapter_description = serializers.SerializerMethodField()
     contact_email = serializers.SerializerMethodField()
     chapter_is_active = serializers.SerializerMethodField()
@@ -96,13 +97,13 @@ class ClubListSerializer(serializers.ModelSerializer):
             "campus_name",
             "name",
             "slug",
-            "type",
             "objective",
-            "about",
             "member_count",
             "open_to_all",
             "president_name",
             "vice_president_name",
+            "instagram",
+            "linkedin",
             "chapter_description",
             "contact_email",
             "chapter_is_active",
@@ -150,6 +151,14 @@ class ClubListSerializer(serializers.ModelSerializer):
         chapter = self._current_chapter(obj)
         return chapter.contact_email if chapter else ""
 
+    def get_instagram(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.instagram if chapter else ""
+
+    def get_linkedin(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.linkedin if chapter else ""
+
     def get_chapter_is_active(self, obj):
         chapter = self._current_chapter(obj)
         return chapter.is_active if chapter else False
@@ -172,6 +181,8 @@ class ClubCampusSerializer(serializers.ModelSerializer):
             "vice_president_name",
             "vice_president_email",
             "vice_president_photo",
+            "instagram",
+            "linkedin",
             "chapter_description",
             "contact_email",
             "is_active",
@@ -181,7 +192,6 @@ class ClubCampusSerializer(serializers.ModelSerializer):
 
 class ClubDetailSerializer(serializers.ModelSerializer):
     campus_chapters = ClubCampusSerializer(many=True, read_only=True)
-    objective = serializers.CharField(source="about", read_only=True)
 
     class Meta:
         model = Club
@@ -189,17 +199,9 @@ class ClubDetailSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
-            "type",
             "objective",
-            "about",
-            "activities",
-            "achievements",
-            "how_to_join",
-            "instagram",
-            "founded_year",
             "logo_url",
             "cover_image",
-            "verified_at",
             "is_active",
             "campus_chapters",
             "created_at",

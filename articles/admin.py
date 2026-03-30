@@ -28,12 +28,11 @@ class SubcategoryAdmin(admin.ModelAdmin):
 class ClubAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "type",
         "is_active",
         "updated_at",
     )
-    list_filter = ("type", "is_active")
-    search_fields = ("name", "campuses__name", "about")
+    list_filter = ("is_active",)
+    search_fields = ("name", "campuses__name", "objective")
     prepopulated_fields = {"slug": ["name"]}
 
 

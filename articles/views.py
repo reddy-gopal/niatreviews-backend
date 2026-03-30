@@ -401,9 +401,6 @@ class ClubViewSet(viewsets.ModelViewSet):
             )
         else:
             qs = qs.prefetch_related("campus_chapters__campus")
-        club_type = (self.request.query_params.get("type") or "").strip()
-        if club_type:
-            qs = qs.filter(type=club_type)
         open_to_all = self.request.query_params.get("open_to_all")
         if open_to_all is not None:
             qs = qs.filter(campus_chapters__open_to_all=open_to_all.lower() in ("true", "1", "yes"))
@@ -411,8 +408,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         if search:
             qs = qs.filter(
                 Q(name__icontains=search)
-                | Q(about__icontains=search)
-                | Q(activities__icontains=search)
+                | Q(objective__icontains=search)
                 | Q(campus_chapters__campus__name__icontains=search)
             )
 

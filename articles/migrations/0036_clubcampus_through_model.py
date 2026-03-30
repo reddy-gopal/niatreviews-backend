@@ -52,10 +52,23 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.RunPython(backfill_club_chapters, migrations.RunPython.noop),
-        migrations.AlterField(
-            model_name="club",
-            name="campuses",
-            field=models.ManyToManyField(blank=True, related_name="clubs", through="articles.ClubCampus", to="campuses.campus"),
+        migrations.SeparateDatabaseAndState(
+            # Changing M2M `through` cannot be emitted as a DB ALTER by Django.
+            # We keep DB ops as-is and only update migration state so future
+            # migrations/models know `club.campuses` uses ClubCampus.
+            database_operations=[],
+            state_operations=[
+                migrations.AlterField(
+                    model_name="club",
+                    name="campuses",
+                    field=models.ManyToManyField(
+                        blank=True,
+                        related_name="clubs",
+                        through="articles.ClubCampus",
+                        to="campuses.campus",
+                    ),
+                ),
+            ],
         ),
         migrations.RemoveField(
             model_name="club",
