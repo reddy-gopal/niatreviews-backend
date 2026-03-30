@@ -115,9 +115,22 @@ class ClubListSerializer(serializers.ModelSerializer):
 
     def _current_chapter(self, obj):
         chapter_list = getattr(obj, "current_chapter", None)
-        if chapter_list:
+        if isinstance(chapter_list, list) and chapter_list:
             return chapter_list[0]
-        return None
+
+        request = self.context.get("request")
+        campus_param = None
+        if request is not None:
+            campus_param = request.query_params.get("campus") or request.query_params.get("campus_id")
+        if campus_param:
+            chapter = obj.campus_chapters.filter(campus_id=campus_param).first()
+            if chapter is not None:
+                return chapter
+
+        chapter = obj.campus_chapters.filter(is_active=True).first()
+        if chapter is not None:
+            return chapter
+        return obj.campus_chapters.first()
 
     def get_member_count(self, obj):
         chapter = self._current_chapter(obj)
@@ -192,14 +205,99 @@ class ClubCampusSerializer(serializers.ModelSerializer):
 
 class ClubDetailSerializer(serializers.ModelSerializer):
     campus_chapters = ClubCampusSerializer(many=True, read_only=True)
+    campus_id = serializers.SerializerMethodField()
+    campus_name = serializers.SerializerMethodField()
+    member_count = serializers.SerializerMethodField()
+    open_to_all = serializers.SerializerMethodField()
+    president_name = serializers.SerializerMethodField()
+    vice_president_name = serializers.SerializerMethodField()
+    instagram = serializers.SerializerMethodField()
+    linkedin = serializers.SerializerMethodField()
+    chapter_description = serializers.SerializerMethodField()
+    contact_email = serializers.SerializerMethodField()
+    chapter_is_active = serializers.SerializerMethodField()
+
+    def _current_chapter(self, obj):
+        chapter_list = getattr(obj, "current_chapter", None)
+        if isinstance(chapter_list, list) and chapter_list:
+            return chapter_list[0]
+
+        request = self.context.get("request")
+        campus_param = None
+        if request is not None:
+            campus_param = request.query_params.get("campus") or request.query_params.get("campus_id")
+        if campus_param:
+            chapter = obj.campus_chapters.filter(campus_id=campus_param).first()
+            if chapter is not None:
+                return chapter
+
+        chapter = obj.campus_chapters.filter(is_active=True).first()
+        if chapter is not None:
+            return chapter
+        return obj.campus_chapters.first()
+
+    def get_member_count(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.member_count if chapter else 0
+
+    def get_campus_id(self, obj):
+        chapter = self._current_chapter(obj)
+        return str(chapter.campus_id) if chapter else None
+
+    def get_campus_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.campus.name if chapter else ""
+
+    def get_open_to_all(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.open_to_all if chapter else False
+
+    def get_president_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.president_name if chapter else ""
+
+    def get_vice_president_name(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.vice_president_name if chapter else ""
+
+    def get_chapter_description(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.chapter_description if chapter else ""
+
+    def get_contact_email(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.contact_email if chapter else ""
+
+    def get_instagram(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.instagram if chapter else ""
+
+    def get_linkedin(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.linkedin if chapter else ""
+
+    def get_chapter_is_active(self, obj):
+        chapter = self._current_chapter(obj)
+        return chapter.is_active if chapter else False
 
     class Meta:
         model = Club
         fields = [
             "id",
+            "campus_id",
+            "campus_name",
             "name",
             "slug",
             "objective",
+            "member_count",
+            "open_to_all",
+            "president_name",
+            "vice_president_name",
+            "instagram",
+            "linkedin",
+            "chapter_description",
+            "contact_email",
+            "chapter_is_active",
             "logo_url",
             "cover_image",
             "is_active",
