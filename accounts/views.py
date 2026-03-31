@@ -404,3 +404,183 @@ class AuthorProfileWithArticlesView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class ForgotPasswordRequestView(APIView):
+    """
+    POST /api/auth/forgot-password/request/
+    Body: { "phone_number": "9876543210" }
+    Sends OTP to the provided phone number when an account exists.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from verification.msg91_client import is_configured as msg91_configured, send_otp as msg91_send_otp
+
+        phone_number = (request.data.get("phone_number") or "").strip()
+        if not phone_number:
+            return Response({"phone_number": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not msg91_configured():
+            return Response({"detail": "OTP is not configured. Contact support."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        user = User.objects.filter(phone_number=phone_number).first()
+        if not user:
+            return Response({"detail": "No account found with this phone number."}, status=status.HTTP_404_NOT_FOUND)
+
+        ok, message = msg91_send_otp(phone_number)
+        if not ok:
+            return Response({"detail": message or "Failed to send OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "OTP sent to your phone number."}, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordVerifyView(APIView):
+    """
+    POST /api/auth/forgot-password/verify/
+    Body: { "phone_number": "9876543210", "code": "123456" }
+    Verifies OTP only.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from django.core.cache import cache
+        phone_number = (request.data.get("phone_number") or "").strip()
+        code = (request.data.get("code") or "").strip()
+        if not phone_number:
+            return Response({"phone_number": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not code:
+            return Response({"code": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+        valid, _ = _verify_otp_for_phone(phone_number, code)
+        if not valid:
+            return Response({"detail": "Invalid or expired code.", "verified": False}, status=status.HTTP_400_BAD_REQUEST)
+        cache.set(f"forgot_password_verified:{phone_number}:{code}", True, timeout=600)
+        return Response({"verified": True}, status=status.HTTP_200_OK)
+
+
+class ForgotPasswordResetConfirmView(APIView):
+    """
+    POST /api/auth/forgot-password/reset/
+    Body: {
+      "phone_number": "9876543210",
+      "code": "123456",
+      "new_password": "...",
+      "confirm_password": "..."
+    }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        from django.core.cache import cache
+        phone_number = (request.data.get("phone_number") or "").strip()
+        code = (request.data.get("code") or "").strip()
+        new_password = (request.data.get("new_password") or "").strip()
+        confirm_password = (request.data.get("confirm_password") or "").strip()
+        if not phone_number:
+            return Response({"phone_number": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not code:
+            return Response({"code": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not new_password or len(new_password) < 8:
+            return Response({"new_password": "New password must be at least 8 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        if new_password != confirm_password:
+            return Response({"confirm_password": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        verified_cache_key = f"forgot_password_verified:{phone_number}:{code}"
+        already_verified = bool(cache.get(verified_cache_key))
+        valid = already_verified
+        if not valid:
+            valid, _ = _verify_otp_for_phone(phone_number, code)
+        if not valid:
+            return Response({"detail": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(phone_number=phone_number).first()
+        if not user:
+            return Response({"detail": "No account found with this phone number."}, status=status.HTTP_404_NOT_FOUND)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        cache.delete(verified_cache_key)
+        return Response({"detail": "Password has been reset. You can log in now."}, status=status.HTTP_200_OK)
+
+
+class UsernameAvailabilityView(APIView):
+    """
+    GET /api/auth/username-available/?username=<value>
+    Returns { "available": true/false }.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        username = (request.query_params.get("username") or "").strip()
+        if not username:
+            return Response({"detail": "username query param is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if username.lower() == "me":
+            return Response({"available": False}, status=status.HTTP_200_OK)
+        exists = User.objects.filter(username__iexact=username).exclude(pk=request.user.pk).exists()
+        return Response({"available": not exists}, status=status.HTTP_200_OK)
+
+
+class ChangePhoneRequestOtpView(APIView):
+    """
+    POST /api/auth/change-phone/request-otp/
+    Body: { "phone_number": "9876543210" }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from verification.msg91_client import is_configured as msg91_configured, send_otp as msg91_send_otp
+
+        phone_number = (request.data.get("phone_number") or "").strip()
+        if not phone_number:
+            return Response({"phone_number": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.phone_number == phone_number:
+            return Response(
+                {"phone_number": "This is already your current phone number."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if User.objects.filter(phone_number=phone_number).exclude(pk=request.user.pk).exists():
+            return Response(
+                {"phone_number": "This phone number is already registered with another account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not msg91_configured():
+            return Response({"detail": "OTP is not configured. Contact support."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        ok, message = msg91_send_otp(phone_number)
+        if not ok:
+            return Response({"detail": message or "Failed to send OTP."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"detail": "OTP sent to new phone number."}, status=status.HTTP_200_OK)
+
+
+class ChangePhoneConfirmView(APIView):
+    """
+    POST /api/auth/change-phone/confirm/
+    Body: { "phone_number": "9876543210", "code": "123456" }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        phone_number = (request.data.get("phone_number") or "").strip()
+        code = (request.data.get("code") or "").strip()
+        if not phone_number:
+            return Response({"phone_number": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not code:
+            return Response({"code": "Verification code is required."}, status=status.HTTP_400_BAD_REQUEST)
+        if request.user.phone_number == phone_number:
+            return Response(
+                {"phone_number": "This is already your current phone number."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if User.objects.filter(phone_number=phone_number).exclude(pk=request.user.pk).exists():
+            return Response(
+                {"phone_number": "This phone number is already registered with another account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        valid, _ = _verify_otp_for_phone(phone_number, code)
+        if not valid:
+            return Response({"detail": "Invalid or expired code."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        user.phone_number = phone_number
+        user.phone_verified = True
+        user.save(update_fields=["phone_number", "phone_verified"])
+        return Response({"detail": "Phone number has been updated."}, status=status.HTTP_200_OK)

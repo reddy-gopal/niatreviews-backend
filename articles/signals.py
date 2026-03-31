@@ -1,11 +1,30 @@
 import logging
+import os
+import requests
 from django.conf import settings
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from .models import Article
+from campuses.models import Campus
 
 logger = logging.getLogger(__name__)
+NEXT_BASE_URL = os.environ.get("NEXT_BASE_URL", "").rstrip("/")
+REVALIDATION_SECRET = os.environ.get("REVALIDATION_SECRET", "")
+
+
+def _revalidate_paths(paths: list[str]) -> None:
+    if not NEXT_BASE_URL or not REVALIDATION_SECRET:
+        return
+    try:
+        requests.post(
+            f"{NEXT_BASE_URL}/api/revalidate",
+            json={"secret": REVALIDATION_SECRET, "paths": paths},
+            timeout=5,
+        )
+        logger.info("Revalidated paths: %s", paths)
+    except requests.exceptions.RequestException as e:
+        logger.warning("Revalidation failed for paths %s: %s", paths, e)
 
 
 def _sync_ai_review_enabled():
@@ -75,3 +94,39 @@ def trigger_ai_review_after_create(sender, instance, created, **kwargs):
 
     _run_ai_review_and_assign(instance)
     instance.save(update_fields=["ai_confident_score", "ai_feedback", "ai_reviewed_at"])
+
+
+@receiver(post_save, sender=Article)
+def revalidate_article_page(sender, instance, **kwargs):
+    if instance.campus_id is None or instance.slug is None:
+        return
+    if instance.campus_id.slug is None:
+        return
+    paths = [
+        f"/campus/{instance.campus_id.slug}/article/{instance.slug}",
+        f"/campus/{instance.campus_id.slug}",
+        f"/campus/{instance.campus_id.slug}/articles",
+    ]
+    _revalidate_paths(paths)
+
+
+@receiver(post_delete, sender=Article)
+def revalidate_deleted_article_page(sender, instance, **kwargs):
+    if instance.campus_id is None or instance.slug is None:
+        return
+    if instance.campus_id.slug is None:
+        return
+    paths = [
+        f"/campus/{instance.campus_id.slug}/article/{instance.slug}",
+        f"/campus/{instance.campus_id.slug}",
+        f"/campus/{instance.campus_id.slug}/articles",
+    ]
+    _revalidate_paths(paths)
+
+
+@receiver(post_save, sender=Campus)
+def revalidate_campus_page(sender, instance, **kwargs):
+    if instance.slug is None:
+        return
+    paths = [f"/campus/{instance.slug}", "/campuses"]
+    _revalidate_paths(paths)
