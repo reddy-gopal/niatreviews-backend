@@ -30,6 +30,8 @@ from accounts.views import (
     DeleteAccountView,
     PhoneLoginView,
     PhonePasswordLoginView,
+    ModeratorAdminListCreateView,
+    ModeratorAdminDetailView,
 )
 from verification.magic_login_views import MagicLoginView
 from qa.dashboard_views import SeniorDashboardView
@@ -49,6 +51,8 @@ urlpatterns = [
     path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
     path("api/users/<str:username>/", UserProfileByUsernameView.as_view(), name="user-profile-by-username"),
     path("api/authors/<str:username>/", AuthorProfileWithArticlesView.as_view(), name="author-profile-with-articles"),
+    path("api/admin/moderators/", ModeratorAdminListCreateView.as_view(), name="admin-moderators-list-create"),
+    path("api/admin/moderators/<uuid:moderator_id>/", ModeratorAdminDetailView.as_view(), name="admin-moderator-detail"),
     path("api/", include("qa.urls")),
     path("api/dashboard/senior/", SeniorDashboardView.as_view(), name="dashboard-senior"),
     path("api/", include("notifications.urls")),

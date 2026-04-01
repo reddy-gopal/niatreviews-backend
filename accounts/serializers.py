@@ -128,6 +128,48 @@ class FoundingEditorProfileSerializer(serializers.ModelSerializer):
         fields = ["linkedin_profile", "campus_id", "campus_name", "year_joined"]
 
 
+class ModeratorAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "phone_number",
+            "role",
+            "is_active",
+            "date_joined",
+            "last_login",
+        ]
+        read_only_fields = ["id", "role", "date_joined", "last_login"]
+
+
+class ModeratorAssignSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField(required=False)
+    username = serializers.CharField(required=False, allow_blank=False)
+    email = serializers.EmailField(required=False, allow_blank=False)
+    phone_number = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        provided = [
+            "user_id" in attrs,
+            bool(attrs.get("username")),
+            bool(attrs.get("email")),
+            bool(attrs.get("phone_number")),
+        ]
+        if sum(provided) == 0:
+            raise serializers.ValidationError(
+                "Provide one identifier: user_id, username, email, or phone_number."
+            )
+        return attrs
+
+
+class ModeratorUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["is_active"]
+
+
 class SeniorsSetupSerializer(serializers.Serializer):
     """First-time setup for approved seniors (set username and password after magic link)."""
     username = serializers.CharField(max_length=150, required=False, allow_blank=False)

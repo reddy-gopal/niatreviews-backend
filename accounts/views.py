@@ -4,9 +4,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import NotFound
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 
 from .models import FoundingEditorProfile
 from .serializers import (
@@ -15,6 +17,9 @@ from .serializers import (
     SeniorsSetupSerializer,
     FoundingEditorProfileSerializer,
     AuthorProfileSerializer,
+    ModeratorAdminSerializer,
+    ModeratorAssignSerializer,
+    ModeratorUpdateSerializer,
 )
 from verification.models import MagicLoginToken
 from articles.models import Article
@@ -404,3 +409,115 @@ class AuthorProfileWithArticlesView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class AdminModeratorsPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
+class _AdminRolePermission:
+    @staticmethod
+    def has_admin_role(user):
+        return (
+            user
+            and user.is_authenticated
+            and getattr(user, "role", None) == "admin"
+        )
+
+
+class ModeratorAdminListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = AdminModeratorsPagination
+
+    def _ensure_admin(self, request):
+        if not _AdminRolePermission.has_admin_role(request.user):
+            return Response({"detail": "Only admins can manage moderators."}, status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    def get(self, request):
+        forbidden = self._ensure_admin(request)
+        if forbidden:
+            return forbidden
+
+        qs = User.objects.filter(role="moderator").order_by("-date_joined")
+        search = (request.query_params.get("search") or "").strip()
+        if search:
+            qs = qs.filter(
+                Q(username__icontains=search)
+                | Q(email__icontains=search)
+                | Q(phone_number__icontains=search)
+            )
+
+        is_active = request.query_params.get("is_active")
+        if is_active in ("true", "false"):
+            qs = qs.filter(is_active=is_active == "true")
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        serializer = ModeratorAdminSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+    def post(self, request):
+        forbidden = self._ensure_admin(request)
+        if forbidden:
+            return forbidden
+
+        ser = ModeratorAssignSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        data = ser.validated_data
+
+        if "user_id" in data:
+            user = User.objects.filter(id=data["user_id"]).first()
+        elif data.get("username"):
+            user = User.objects.filter(username__iexact=data["username"].strip()).first()
+        elif data.get("email"):
+            user = User.objects.filter(email__iexact=data["email"].strip()).first()
+        else:
+            user = User.objects.filter(phone_number=data["phone_number"].strip()).first()
+
+        if not user:
+            raise NotFound("User not found.")
+        if user.role == "moderator":
+            return Response({"detail": "User is already a moderator."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.role = "moderator"
+        user.save(update_fields=["role"])
+        return Response(ModeratorAdminSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class ModeratorAdminDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _ensure_admin(self, request):
+        if not _AdminRolePermission.has_admin_role(request.user):
+            return Response({"detail": "Only admins can manage moderators."}, status=status.HTTP_403_FORBIDDEN)
+        return None
+
+    def _get_moderator(self, moderator_id):
+        user = User.objects.filter(id=moderator_id, role="moderator").first()
+        if not user:
+            raise NotFound("Moderator not found.")
+        return user
+
+    def patch(self, request, moderator_id):
+        forbidden = self._ensure_admin(request)
+        if forbidden:
+            return forbidden
+
+        moderator = self._get_moderator(moderator_id)
+        serializer = ModeratorUpdateSerializer(moderator, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ModeratorAdminSerializer(moderator).data)
+
+    def delete(self, request, moderator_id):
+        forbidden = self._ensure_admin(request)
+        if forbidden:
+            return forbidden
+
+        moderator = self._get_moderator(moderator_id)
+        moderator.role = "student"
+        moderator.save(update_fields=["role"])
+        return Response(status=status.HTTP_204_NO_CONTENT)
