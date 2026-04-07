@@ -3,6 +3,7 @@ import time
 import os
 import re
 from django.core.management.base import BaseCommand
+from django.db.models import Q
 from articles.models import Article
 from campuses.models import Campus
 import anthropic
@@ -1035,13 +1036,10 @@ class Command(BaseCommand):
         if options['article_id']:
             articles = Article.objects.filter(
                 id=options['article_id'],
-                status='published',
             ).select_related('campus_id')
         else:
             articles = Article.objects.filter(
-                status='published',
-                is_global_guide=False,
-                campus_id__isnull=False,
+                Q(meta_title__isnull=True) | Q(meta_title__exact=''),
             ).select_related('campus_id')
 
         total = articles.count()
