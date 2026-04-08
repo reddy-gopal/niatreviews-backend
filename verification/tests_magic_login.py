@@ -39,7 +39,13 @@ def _valid_payload():
 class MagicLoginTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username="senior1", email="s@example.com", password="x", role="senior")
+        self.user = User.objects.create_user(
+            username="senior1",
+            email="s@example.com",
+            password="x",
+            role=User.UserRole.VERIFIED_NIAT_STUDENT,
+            is_verified=True,
+        )
         self.profile = SeniorProfile.objects.create(user=self.user, status="approved", proof_summary="Ok")
 
     def test_magic_login_success_redirects_to_onboarding(self):
@@ -93,7 +99,13 @@ class MagicLoginTestCase(TestCase):
 class OnboardingAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_user(username="senior1", email="s@example.com", password="x", role="senior")
+        self.user = User.objects.create_user(
+            username="senior1",
+            email="s@example.com",
+            password="x",
+            role=User.UserRole.VERIFIED_NIAT_STUDENT,
+            is_verified=True,
+        )
         self.profile = SeniorProfile.objects.create(user=self.user, status="approved", proof_summary="Ok")
 
     def test_status_not_submitted(self):
@@ -118,7 +130,13 @@ class OnboardingAPITestCase(TestCase):
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_submit_requires_approved_senior(self):
-        other = User.objects.create_user(username="student1", email="x@example.com", password="x", role="student")
+        other = User.objects.create_user(
+            username="student1",
+            email="x@example.com",
+            password="x",
+            role=User.UserRole.INTERMEDIATE_STUDENT,
+            is_verified=True,
+        )
         self.client.force_authenticate(user=other)
         r = self.client.post(reverse("senior-onboarding-review-submit"), _valid_payload(), format="json")
         self.assertEqual(r.status_code, status.HTTP_403_FORBIDDEN)

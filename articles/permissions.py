@@ -1,24 +1,23 @@
 from rest_framework.permissions import BasePermission
 
+from accounts.models import User
+from core.permissions import IsAdmin, IsAuthorOrModerator, IsModerator, IsModeratorOrAdmin
 
-class IsModerator(BasePermission):
+
+class CanWriteArticle(BasePermission):
+    message = "Only verified NIAT users can write articles."
+
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and getattr(request.user, "role", None) == "moderator"
+        user = getattr(request, "user", None)
+        return bool(
+            user
+            and user.is_authenticated
+            and getattr(user, "role", None) in {
+                User.UserRole.VERIFIED_NIAT_STUDENT,
+                User.UserRole.MODERATOR,
+                User.UserRole.ADMIN,
+            }
         )
 
 
-class IsAuthorOrModerator(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if getattr(request.user, "role", None) == "moderator":
-            return True
-        return str(obj.author_id_id) == str(request.user.id)
-
-class IsAdmin(BasePermission):
-    def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated and getattr(request.user, "role", None) == "admin"
-        )
+__all__ = ["IsAdmin", "IsAuthorOrModerator", "IsModerator", "IsModeratorOrAdmin", "CanWriteArticle"]

@@ -18,8 +18,8 @@ class AuthorArticleCountSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "email", "article_count", "campus_name"]
 
     def get_campus_name(self, obj):
-        if hasattr(obj, "founding_editor_profile") and obj.founding_editor_profile.campus_name:
-            return obj.founding_editor_profile.campus_name
+        if hasattr(obj, "verified_niat_profile") and obj.verified_niat_profile.campus_name:
+            return obj.verified_niat_profile.campus_name
         
         first_article = obj.articles.filter(campus_name__isnull=False).exclude(campus_name="").first()
         if first_article:

@@ -13,7 +13,7 @@ class FeaturedPost(models.Model):
     """Post promoted to featured (e.g. homepage). Order for display."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     post = models.ForeignKey(
-        "community.Post",
+        "articles.Article",
         on_delete=models.CASCADE,
         related_name="featured_entries",
         db_index=True,
@@ -48,7 +48,7 @@ class PendingApprovalQueue(models.Model):
         on_delete=models.CASCADE,
         db_index=True,
     )
-    object_id = models.UUIDField(db_index=True)
+    object_id = models.CharField(max_length=64, db_index=True)
     content_object = GenericForeignKey("content_type", "object_id")
 
     STATUS_CHOICES = [

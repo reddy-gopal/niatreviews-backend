@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.permissions import IsVerifiedUser
 from verification.models import SeniorProfile
 from .models import SeniorOnboardingReview
 from .permissions import IsApprovedSenior
@@ -13,7 +14,7 @@ from .serializers import SeniorOnboardingReviewSerializer
 class OnboardingStatusView(APIView):
     """GET /api/senior/onboarding/status/ — returns review_submitted for current senior."""
 
-    permission_classes = [IsApprovedSenior]
+    permission_classes = [IsApprovedSenior, IsVerifiedUser]
 
     def get(self, request):
         profile = request.user.senior_profile
@@ -27,7 +28,7 @@ class OnboardingStatusView(APIView):
 class OnboardingReviewSubmitView(APIView):
     """POST /api/senior/onboarding/review/ — create onboarding review, set flags on SeniorProfile."""
 
-    permission_classes = [IsApprovedSenior]
+    permission_classes = [IsApprovedSenior, IsVerifiedUser]
 
     def post(self, request):
         if SeniorOnboardingReview.objects.filter(user=request.user).exists():

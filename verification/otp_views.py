@@ -42,6 +42,7 @@ class OTPRequestView(APIView):
     Phone: MSG91 sends OTP. Email: not configured (501).
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()
@@ -97,6 +98,7 @@ class OTPVerifyView(APIView):
     Phone: MSG91 verifies. Email: not implemented (501).
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         email = (request.data.get("email") or "").strip()
@@ -143,6 +145,7 @@ class SeniorRegistrationStatusView(APIView):
     Only returns status; no PII beyond what the user provides.
     """
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def get(self, request):
         email = (request.query_params.get("email") or "").strip().lower()

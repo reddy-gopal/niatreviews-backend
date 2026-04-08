@@ -18,11 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+import importlib.util
 from accounts.views import (
     RegisterView,
     MeView,
-    FoundingEditorProfileView,
+    VerifiedNiatStudentProfileView,
     UserProfileByUsernameView,
     AuthorProfileWithArticlesView,
     ForgotPasswordResetView,
@@ -31,20 +31,24 @@ from accounts.views import (
     PhoneLoginView,
     PhonePasswordLoginView,
 )
+from accounts.auth_views import RateLimitedTokenObtainPairView, TokenRefreshCookieView, VerifyEmailView
+from backend.health_views import HealthCheckView
 from verification.magic_login_views import MagicLoginView
 from qa.dashboard_views import SeniorDashboardView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("health/", HealthCheckView.as_view(), name="health"),
+    path("api/token/", RateLimitedTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshCookieView.as_view(), name="token_refresh"),
     path("api/auth/", include("accounts.urls")),
     path("api/auth/register/", RegisterView.as_view(), name="register"),
+    path("api/auth/verify-email/", VerifyEmailView.as_view(), name="verify-email"),
     path("api/auth/forgot-password/reset/", ForgotPasswordResetView.as_view(), name="forgot-password-reset"),
     path("api/auth/login/phone/", PhoneLoginView.as_view(), name="login-phone"),
     path("api/auth/login/phone-password/", PhonePasswordLoginView.as_view(), name="login-phone-password"),
     path("api/auth/me/", MeView.as_view(), name="me"),
-    path("api/auth/me/profile/", FoundingEditorProfileView.as_view(), name="me-profile"),
+    path("api/auth/me/profile/", VerifiedNiatStudentProfileView.as_view(), name="me-profile"),
     path("api/auth/change-password/", ChangePasswordView.as_view(), name="change-password"),
     path("api/auth/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
     path("api/auth/magic-login/", MagicLoginView.as_view(), name="magic-login"),
@@ -56,9 +60,13 @@ urlpatterns = [
     path("api/verification/", include("verification.urls")),
     path("api/seniors/", include("verification.senior_urls")),
     path("api/senior/", include("reviews.onboarding_urls")),
+    path("api/moderation/", include("moderation.urls")),
     path("api/articles/", include("articles.urls")),
     path("api/campuses/", include("campuses.urls")),
+    path("api/profiles/", include("profiles.urls")),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    if importlib.util.find_spec("debug_toolbar"):
+        urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]

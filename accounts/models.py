@@ -4,6 +4,7 @@ Custom User with UUID PK, roles, verified-senior flag, and phone (with verificat
 Must be created first; AUTH_USER_MODEL must point here.
 """
 import uuid
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -20,19 +21,19 @@ class User(AbstractUser):
         editable=False,
         help_text="Public UUID for the user; use in APIs and foreign keys.",
     )
-    ROLE_CHOICES = [
-        ("student", "Student"),
-        ("senior", "Senior"),
-        ("admin", "Admin"),
-        ("moderator", "Moderator"),
-        ("founding_editor", "Founding Editor"),
-    ]
+    class UserRole(models.TextChoices):
+        INTERMEDIATE_STUDENT = "intermediate_student", "Intermediate Student"
+        NIAT_STUDENT = "niat_student", "NIAT Student"
+        VERIFIED_NIAT_STUDENT = "verified_niat_student", "Verified NIAT Student"
+        MODERATOR = "moderator", "Moderator"
+        ADMIN = "admin", "Admin"
+
     role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default="student",
+        max_length=24,
+        choices=UserRole.choices,
+        default=UserRole.INTERMEDIATE_STUDENT,
         db_index=True,
-        help_text="User role; seniors can be verified separately.",
+        help_text="User role in the canonical RBAC model.",
     )
     is_verified_senior = models.BooleanField(
         default=False,
@@ -52,6 +53,22 @@ class User(AbstractUser):
         default=False,
         db_index=True,
         help_text="True after successful phone OTP verification.",
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True once the user's email has been verified.",
+    )
+    is_onboarded = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="True once the user completes onboarding.",
+    )
+    email_verification_token = models.UUIDField(
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="One-time token used to verify the user's email address.",
     )
 
     class Meta:
@@ -77,6 +94,12 @@ class User(AbstractUser):
             normalized = self.email.strip()
             self.email = normalized or None
         super().save(*args, **kwargs)
+
+    @classmethod
+    def validate_role_value(cls, value):
+        valid_roles = {choice for choice, _label in cls.UserRole.choices}
+        if value not in valid_roles:
+            raise ValidationError({"role": f"Role must be one of: {', '.join(sorted(valid_roles))}."})
 
 
 class FoundingEditorProfile(models.Model):

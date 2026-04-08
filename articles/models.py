@@ -1,7 +1,12 @@
 import uuid
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
+
+from audit.models import ActionType
+from audit.utils import log_action
 
 CATEGORY_CHOICES = [
     ("onboarding-kit", "The Onboarding Kit"),
@@ -159,6 +164,13 @@ STATUS_CHOICES = [
     ("rejected", "Rejected"),
 ]
 
+VALID_TRANSITIONS = {
+    "draft": {"pending_review"},
+    "pending_review": {"draft", "published", "rejected"},
+    "rejected": {"draft", "pending_review"},
+    "published": set(),
+}
+
 
 class Article(models.Model):
     id = models.UUIDField(
@@ -248,6 +260,44 @@ class Article(models.Model):
         if not (self.slug or "").strip():
             self.slug = generate_unique_slug(self.title or "article", instance=self)
         super().save(*args, **kwargs)
+
+    def transition_to(self, new_status, actor, request=None, rejection_reason=""):
+        current_status = self.status
+        allowed = VALID_TRANSITIONS.get(current_status, set())
+        if new_status not in allowed:
+            raise ValidationError(f"Cannot transition article from '{current_status}' to '{new_status}'.")
+
+        self.status = new_status
+        action = None
+        if new_status == "pending_review":
+            self.rejection_reason = ""
+            action = ActionType.ARTICLE_SUBMITTED
+        elif new_status == "draft":
+            self.rejection_reason = ""
+        elif new_status == "rejected":
+            self.rejection_reason = rejection_reason
+            self.reviewed_by_id = actor
+            self.reviewed_at = timezone.now()
+            action = ActionType.ARTICLE_REJECTED
+        elif new_status == "published":
+            self.rejection_reason = ""
+            self.reviewed_by_id = actor
+            self.reviewed_at = timezone.now()
+            if self.published_at is None:
+                self.published_at = timezone.now()
+            action = ActionType.ARTICLE_PUBLISHED
+
+        self.save()
+
+        if action:
+            log_action(
+                actor=actor,
+                action=action,
+                entity=self,
+                target_user=self.author_id,
+                metadata={"from_status": current_status, "to_status": new_status},
+                request=request,
+            )
 
     @classmethod
     def for_club_feed(cls, campus_id, club_slug, status="published"):

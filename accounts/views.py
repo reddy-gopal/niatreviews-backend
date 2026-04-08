@@ -4,24 +4,27 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
-from .models import FoundingEditorProfile
+from .models import User
 from .serializers import (
     ProfileSerializer,
     PublicProfileSerializer,
     SeniorsSetupSerializer,
-    FoundingEditorProfileSerializer,
+    VerifiedNiatStudentProfileSerializer,
     AuthorProfileSerializer,
+    RegisterSerializer,
+    OnboardingRoleSerializer,
+    ChangePasswordSerializer,
 )
+from .auth_views import set_access_cookie, set_refresh_cookie
+from core.permissions import IsFoundingEditor
+from profiles.models import VerifiedNiatStudentProfile
 from verification.models import MagicLoginToken
 from articles.models import Article
 from articles.serializers import ArticleListSerializer
-
-User = get_user_model()
-
 
 def _bad_request(payload):
     return Response(payload, status=status.HTTP_400_BAD_REQUEST)
@@ -29,10 +32,14 @@ def _bad_request(payload):
 
 def _token_pair_response(user):
     refresh = RefreshToken.for_user(user)
-    return Response({
+    refresh["role"] = user.role
+    refresh["user_id"] = str(user.id)
+    response = Response({
         "access": str(refresh.access_token),
-        "refresh": str(refresh),
     })
+    set_access_cookie(response, str(refresh.access_token))
+    set_refresh_cookie(response, str(refresh))
+    return response
 
 
 def _normalize_optional_email(value):
@@ -64,42 +71,36 @@ def _get_user_by_phone(phone: str):
 
 
 class RegisterView(APIView):
-    """Prospective students: phone required (verified via OTP on frontend), email optional.
-    When source=niatverse (NIATVerse / campus app), user is created with role founding_editor."""
+    """Prospective students register with phone + password."""
     permission_classes = [AllowAny]
 
     def post(self, request):
-        username = (request.data.get("username") or "").strip()
-        phone = (request.data.get("phone") or "").strip()
-        email = _normalize_optional_email(request.data.get("email"))
-        password = request.data.get("password", "")
-        source = (request.data.get("source") or "").strip().lower()
-        if not username or not phone or not password:
-            return _bad_request({"detail": "Username, phone and password are required."})
-        if User.objects.filter(username=username).exists():
-            return _duplicate_error("username")
-        if User.objects.filter(phone_number=phone).exists():
-            return _duplicate_error("phone")
-        if email and User.objects.filter(email__iexact=email).exists():
-            return _duplicate_error("email")
+        serializer = RegisterSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        username = serializer.validated_data["username"]
+        phone = serializer.validated_data["phone"]
+        password = serializer.validated_data["password"]
+        source = (serializer.validated_data.get("source") or "").strip().lower()
 
         try:
             with transaction.atomic():
                 # Avoid create_user(email=None) normalization to "" (which can violate unique constraints).
                 user = User(
                     username=username,
-                    email=email,  # remains NULL when blank/omitted
+                    email=None,
                     phone_number=phone,
                     phone_verified=True,  # Frontend verified via OTP before submit
+                    is_verified=True,
+                    email_verification_token=None,
                 )
                 user.set_password(password)
                 if source == "niatverse":
-                    user.role = "founding_editor"
+                    user.role = User.UserRole.NIAT_STUDENT
                 user.save()
         except IntegrityError:
             # Graceful fallback for race conditions / DB-level uniqueness checks.
-            if email and User.objects.filter(email__iexact=email).exists():
-                return _duplicate_error("email")
             if User.objects.filter(username=username).exists():
                 return _duplicate_error("username")
             if User.objects.filter(phone_number=phone).exists():
@@ -107,7 +108,13 @@ class RegisterView(APIView):
             return _bad_request({"detail": "Unable to register with the provided details."})
 
         return Response(
-            {"id": str(user.id), "username": user.username, "email": user.email or "", "phone": user.phone_number},
+            {
+                "id": str(user.id),
+                "username": user.username,
+                "email": "",
+                "phone": user.phone_number,
+                "is_verified": user.is_verified,
+            },
             status=status.HTTP_201_CREATED,
         )
 
@@ -141,6 +148,26 @@ class MeView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
         return Response(serializer.data)
+
+
+class OnboardingRoleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = OnboardingRoleSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request.user.role = serializer.validated_data["role"]
+        request.user.save(update_fields=["role"])
+        return Response({"role": request.user.role}, status=status.HTTP_200_OK)
+
+
+class OnboardingCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        request.user.is_onboarded = True
+        request.user.save(update_fields=["is_onboarded"])
+        return Response({"is_onboarded": True}, status=status.HTTP_200_OK)
 
 
 def _verify_otp_for_phone(phone: str, code: str):
@@ -265,18 +292,11 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        current = (request.data.get("current_password") or "").strip()
-        new_password = (request.data.get("new_password") or "").strip()
-        if not current:
-            return Response(
-                {"current_password": "Current password is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if not new_password or len(new_password) < 8:
-            return Response(
-                {"new_password": "New password must be at least 8 characters."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        serializer = ChangePasswordSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        current = serializer.validated_data["current_password"].strip()
+        new_password = serializer.validated_data["new_password"]
         user = request.user
         if not user.check_password(current):
             return Response(
@@ -314,38 +334,27 @@ class DeleteAccountView(APIView):
         return Response({"detail": "Your account has been deactivated."})
 
 
-class FoundingEditorProfileView(APIView):
+class VerifiedNiatStudentProfileView(APIView):
     """
-    GET /api/auth/me/profile/ — return current user's Founding Editor profile (college details).
-    PATCH /api/auth/me/profile/ — update profile. Only for users with role founding_editor.
+    GET /api/auth/me/profile/ — return current user's verified NIAT profile (college details).
+    PATCH /api/auth/me/profile/ — update profile for verified NIAT users.
     Profile is created on first GET if missing.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsFoundingEditor]
+    parser_classes = [MultiPartParser, FormParser]
 
     def _get_or_create_profile(self, user):
-        if user.role != "founding_editor":
-            return None
-        profile, _ = FoundingEditorProfile.objects.get_or_create(user=user)
+        profile, _ = VerifiedNiatStudentProfile.objects.get_or_create(user=user)
         return profile
 
     def get(self, request):
         profile = self._get_or_create_profile(request.user)
-        if profile is None:
-            return Response(
-                {"detail": "Founding Editor profile is only for users with role founding_editor."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        serializer = FoundingEditorProfileSerializer(profile)
+        serializer = VerifiedNiatStudentProfileSerializer(profile)
         return Response(serializer.data)
 
     def patch(self, request):
         profile = self._get_or_create_profile(request.user)
-        if profile is None:
-            return Response(
-                {"detail": "Founding Editor profile is only for users with role founding_editor."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        serializer = FoundingEditorProfileSerializer(profile, data=request.data, partial=True)
+        serializer = VerifiedNiatStudentProfileSerializer(profile, data=request.data, partial=True)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
@@ -379,7 +388,7 @@ class AuthorProfileWithArticlesView(APIView):
     pagination_class = AuthorArticlesPagination
 
     def get(self, request, username):
-        user = User.objects.filter(username=username).select_related("founding_editor_profile").first()
+        user = User.objects.filter(username=username).select_related("verified_niat_profile").first()
         if not user:
             return Response({"code": "NOT_FOUND", "detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 

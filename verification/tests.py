@@ -17,7 +17,8 @@ class SeniorVerificationEmailTests(TestCase):
         self.user = User.objects.create_user(
             username="testsenior",
             email="testsenior@example.com",
-            password="testpass123"
+            password="testpass123",
+            is_verified=True,
         )
     
     def test_received_email_sent_on_creation(self):

@@ -1,6 +1,7 @@
 import re
 import uuid
 from collections import defaultdict
+from django.core.exceptions import ValidationError
 from django.http import Http404
 from django.conf import settings
 from django.db import transaction
@@ -17,8 +18,10 @@ from django.db.models import Count, F, Q, OuterRef, Subquery, IntegerField, Valu
 from django.db.models.functions import Coalesce
 
 from .models import Article, ArticleSuggestion, ArticleUpvote, Category, Club, ClubCampus, Subcategory, generate_unique_slug
-from accounts.models import FoundingEditorProfile
-from .permissions import IsAuthorOrModerator, IsModerator
+from profiles.models import VerifiedNiatStudentProfile
+from core.permissions import IsAuthorOrModerator, IsFoundingEditor, IsModeratorOrAdmin
+from .permissions import CanWriteArticle
+from notifications.tasks import send_article_status_email
 from .serializers import (
     ArticleDetailSerializer,
     ArticleListSerializer,
@@ -30,17 +33,21 @@ from .serializers import (
 )
 
 
+moderator_or_admin_permission = IsModeratorOrAdmin()
+founding_editor_permission = IsFoundingEditor()
+author_or_moderator_permission = IsAuthorOrModerator()
+
+
 def _resolve_profile_campus_uuid(request):
     """Return logged-in founding editor campus UUID (or None)."""
     user = getattr(request, "user", None)
     if not user or not user.is_authenticated:
         return None
     try:
-        profile = FoundingEditorProfile.objects.only("campus_id").get(user=user)
-    except FoundingEditorProfile.DoesNotExist:
+        profile = VerifiedNiatStudentProfile.objects.only("campus").get(user=user)
+    except VerifiedNiatStudentProfile.DoesNotExist:
         return None
-    campus_fk = getattr(profile, "campus_id", None)
-    return campus_fk.id if campus_fk is not None else None
+    return profile.campus_id
 
 
 def extract_image_urls_from_html(body):
@@ -50,6 +57,16 @@ def extract_image_urls_from_html(body):
     # Match src="..." or src='...'
     urls = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', body, re.IGNORECASE)
     return [u.strip() for u in urls if u.strip()]
+
+
+def _can_direct_publish(request, article):
+    if moderator_or_admin_permission.has_permission(request, None):
+        return True
+    return (
+        founding_editor_permission.has_permission(request, None)
+        and getattr(settings, "FOUNDING_EDITOR_DIRECT_PUBLISH", False)
+        and str(article.author_id_id) == str(request.user.id)
+    )
 
 
 class ArticlePageNumberPagination(PageNumberPagination):
@@ -67,44 +84,54 @@ class ArticleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Article.objects.select_related("author_id", "campus_id", "category_fk")
         user = self.request.user
-        role = getattr(user, "role", None)
-        is_privileged_reviewer = role in ("moderator", "admin")
+        is_privileged_reviewer = moderator_or_admin_permission.has_permission(self.request, self)
 
-        if not user.is_authenticated:
-            qs = qs.filter(status="published")
-        elif not is_privileged_reviewer:
-            qs = qs.filter(Q(status="published") | Q(author_id_id=str(user.id)))
-        # else privileged reviewer (moderator/admin) sees all
+        if is_privileged_reviewer:
+            base_qs = qs
+        elif self.action in ("preview", "my_articles", "edit_detail", "partial_update", "destroy"):
+            if user.is_authenticated:
+                base_qs = qs.filter(author_id_id=str(user.id))
+            else:
+                base_qs = qs.none()
+        else:
+            base_qs = qs.filter(status="published")
 
         campus = self.request.query_params.get("campus")
         if campus:
             try:
                 campus_uuid = uuid.UUID(str(campus))
-                qs = qs.filter(campus_id_id=campus_uuid)
+                base_qs = base_qs.filter(campus_id_id=campus_uuid)
             except (ValueError, TypeError):
                 pass
         category = self.request.query_params.get("category")
         if category:
-            qs = qs.filter(category=category)
+            base_qs = base_qs.filter(category=category)
+        category_id = self.request.query_params.get("category_id")
+        if category_id:
+            try:
+                category_uuid = uuid.UUID(str(category_id))
+                base_qs = base_qs.filter(category_fk_id=category_uuid)
+            except (ValueError, TypeError):
+                pass
         subcategory = self.request.query_params.get("subcategory")
         if subcategory:
-            qs = qs.filter(subcategory=subcategory)
+            base_qs = base_qs.filter(subcategory=subcategory)
         is_global = self.request.query_params.get("is_global_guide")
         if is_global is not None:
-            qs = qs.filter(is_global_guide=is_global.lower() in ("true", "1", "yes"))
+            base_qs = base_qs.filter(is_global_guide=is_global.lower() in ("true", "1", "yes"))
         featured = self.request.query_params.get("featured")
         if featured is not None:
-            qs = qs.filter(featured=featured.lower() in ("true", "1", "yes"))
+            base_qs = base_qs.filter(featured=featured.lower() in ("true", "1", "yes"))
         if is_privileged_reviewer:
             status_param = self.request.query_params.get("status")
             if status_param:
-                qs = qs.filter(status=status_param)
+                base_qs = base_qs.filter(status=status_param)
         topic = self.request.query_params.get("topic")
         if topic:
-            qs = qs.filter(topic=topic)
+            base_qs = base_qs.filter(topic=topic)
         search = (self.request.query_params.get("search") or "").strip()
         if search:
-            qs = qs.filter(
+            base_qs = base_qs.filter(
                 Q(title__icontains=search)
                 | Q(excerpt__icontains=search)
                 | Q(body__icontains=search)
@@ -114,26 +141,26 @@ class ArticleViewSet(viewsets.ModelViewSet):
             )
         author_username = (self.request.query_params.get("author_username") or "").strip()
         if author_username:
-            qs = qs.filter(author_username__iexact=author_username)
+            base_qs = base_qs.filter(author_username__iexact=author_username)
         updated_since_days = self.request.query_params.get("updated_since_days")
         if updated_since_days:
             try:
                 days = int(updated_since_days)
                 if days >= 0:
                     threshold = timezone.now() - timezone.timedelta(days=days)
-                    qs = qs.filter(updated_at__gte=threshold)
+                    base_qs = base_qs.filter(updated_at__gte=threshold)
             except (ValueError, TypeError):
                 pass
 
         ordering = self.request.query_params.get("ordering", "updated_at")
         if ordering == "upvote_count":
-            qs = qs.order_by("-upvote_count", "-updated_at")
+            base_qs = base_qs.order_by("-upvote_count", "-updated_at")
         else:
-            qs = qs.order_by("-updated_at")
-        return qs
+            base_qs = base_qs.order_by("-updated_at")
+        return base_qs
 
     def get_serializer_class(self):
-        if self.action == "retrieve" or self.action == "create" or self.action == "partial_update" or self.action == "moderate":
+        if self.action == "retrieve" or self.action == "preview" or self.action == "edit_detail" or self.action == "create" or self.action == "partial_update" or self.action == "moderate":
             return ArticleDetailSerializer
         return ArticleListSerializer
 
@@ -141,13 +168,23 @@ class ArticleViewSet(viewsets.ModelViewSet):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
         if self.action == "create":
-            return [IsAuthenticated()]
+            return [IsAuthenticated(), CanWriteArticle()]
         if self.action in ("partial_update", "destroy"):
             return [IsAuthenticated(), IsAuthorOrModerator()]
         if self.action == "moderate":
-            return [IsModerator()]
+            return [IsModeratorOrAdmin()]
         if self.action == "pending":
-            return [IsModerator()]
+            return [IsModeratorOrAdmin()]
+        if self.action == "submit":
+            return [IsAuthenticated(), IsAuthorOrModerator()]
+        if self.action == "preview":
+            return [IsAuthenticated(), IsAuthorOrModerator()]
+        if self.action == "edit_detail":
+            return [IsAuthenticated(), IsAuthorOrModerator()]
+        if self.action in ("approve", "reject"):
+            return [IsModeratorOrAdmin()]
+        if self.action == "publish":
+            return [IsAuthenticated()]
         if self.action == "my_articles":
             return [IsAuthenticated()]
         return [AllowAny()]
@@ -175,20 +212,37 @@ class ArticleViewSet(viewsets.ModelViewSet):
         if instance.status != "published":
             if not request.user.is_authenticated:
                 return Response(status=status.HTTP_404_NOT_FOUND)
-            if str(instance.author_id_id) != str(request.user.id) and getattr(request.user, "role", None) not in ("moderator", "admin"):
+            if not author_or_moderator_permission.has_object_permission(request, self, instance):
                 return Response(status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], permission_classes=[IsAuthenticated, IsAuthorOrModerator])
+    def preview(self, request, pk=None):
+        instance = self.get_object()
+        if not author_or_moderator_permission.has_object_permission(request, self, instance):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="edit", permission_classes=[IsAuthenticated, IsAuthorOrModerator])
+    def edit_detail(self, request, pk=None):
+        instance = self.get_object()
+        if not author_or_moderator_permission.has_object_permission(request, self, instance):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
         data_for_serializer = dict(request.data)
 
-        if getattr(request.user, "role", None) == "founding_editor":
+        if founding_editor_permission.has_permission(request, self):
             try:
-                profile = FoundingEditorProfile.objects.get(user=request.user)
+                profile = VerifiedNiatStudentProfile.objects.get(user=request.user)
                 if profile.campus_id is not None:
-                    data_for_serializer["campus_id"] = str(profile.campus_id.id)
+                    data_for_serializer["campus_id"] = str(profile.campus_id)
                     data_for_serializer["campus_name"] = profile.campus_name or ""
-            except FoundingEditorProfile.DoesNotExist:
+            except VerifiedNiatStudentProfile.DoesNotExist:
                 pass
 
         serializer = ArticleWriteSerializer(data=data_for_serializer, context={"request": request})
@@ -249,24 +303,21 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        is_moderator = getattr(request.user, "role", None) == "moderator"
+        is_moderator = moderator_or_admin_permission.has_permission(request, self)
         if not is_moderator:
             if instance.status not in ("draft", "pending_review", "rejected"):
                 return Response({"detail": "Cannot edit published article."}, status=status.HTTP_400_BAD_REQUEST)
             data_copy = {k: v for k, v in request.data.items() if k in (
                 "campus_id", "campus_name", "category", "category_id", "title", "excerpt", "body", "cover_image", "images", "is_global_guide", "topic", "subcategory", "subcategory_other", "meta_title", "meta_description", "meta_keywords"
             )}
-            if getattr(request.user, "role", None) == "founding_editor":
+            if founding_editor_permission.has_permission(request, self):
                 try:
-                    profile = FoundingEditorProfile.objects.get(user=request.user)
+                    profile = VerifiedNiatStudentProfile.objects.get(user=request.user)
                     if profile.campus_id is not None:
-                        data_copy["campus_id"] = str(profile.campus_id.id)
+                        data_copy["campus_id"] = str(profile.campus_id)
                         data_copy["campus_name"] = profile.campus_name or ""
-                except FoundingEditorProfile.DoesNotExist:
+                except VerifiedNiatStudentProfile.DoesNotExist:
                     pass
-            if instance.status == "rejected":
-                instance.status = "pending_review"
-                instance.rejection_reason = ""
         else:
             data_copy = dict(request.data)
         serializer = ArticleWriteSerializer(data=data_copy, partial=True, context={"request": request})
@@ -301,39 +352,103 @@ class ArticleViewSet(viewsets.ModelViewSet):
             instance.category_fk = data["_resolved_category"]
         if not is_moderator and "status" in request.data:
             new_status = request.data.get("status")
-            if new_status == "pending_review" and instance.status == "draft":
-                instance.status = "pending_review"
-            elif new_status == "draft":
-                instance.status = "draft"
+            try:
+                if new_status == "pending_review" and instance.status in ("draft", "rejected"):
+                    instance.transition_to("pending_review", request.user, request=request)
+                elif new_status == "draft" and instance.status in ("pending_review", "rejected"):
+                    instance.transition_to("draft", request.user, request=request)
+            except ValidationError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         elif is_moderator and "status" in data:
-            setattr(instance, "status", data["status"])
-        instance.save()
+            try:
+                if data["status"] in ("published", "rejected"):
+                    instance.transition_to(
+                        data["status"],
+                        request.user,
+                        request=request,
+                        rejection_reason=data.get("rejection_reason", ""),
+                    )
+                elif data["status"] == "draft" and instance.status != "draft":
+                    instance.transition_to("draft", request.user, request=request)
+            except ValidationError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        if not is_moderator and instance.status == "rejected" and "status" not in request.data:
+            try:
+                instance.transition_to("pending_review", request.user, request=request)
+            except ValidationError as exc:
+                return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            instance.save()
         return Response(ArticleDetailSerializer(instance).data)
 
-    @action(detail=True, methods=["post"], permission_classes=[IsModerator])
+    @action(detail=True, methods=["post"], permission_classes=[IsModeratorOrAdmin])
     def moderate(self, request, pk=None):
         article = self.get_object()
         ser = ModerationSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         data = ser.validated_data
         new_status = data["status"]
-        if new_status == "published":
-            article.status = "published"
-            article.published_at = timezone.now()
-            article.reviewed_by_id = request.user
-            article.reviewed_at = timezone.now()
-            article.rejection_reason = ""
-        else:
-            article.status = "rejected"
-            article.rejection_reason = data.get("rejection_reason", "")
-            article.reviewed_by_id = request.user
-            article.reviewed_at = timezone.now()
+        try:
+            article.transition_to(
+                new_status,
+                request.user,
+                request=request,
+                rejection_reason=data.get("rejection_reason", ""),
+            )
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         if "featured" in data:
             article.featured = data["featured"]
         article.save()
+        send_article_status_email.delay(str(article.pk), article.status)
         return Response(ArticleDetailSerializer(article).data)
 
-    @action(detail=False, methods=["get"], permission_classes=[IsModerator])
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated, IsAuthorOrModerator])
+    def submit(self, request, pk=None):
+        article = self.get_object()
+        try:
+            article.transition_to("pending_review", request.user, request=request)
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        send_article_status_email.delay(str(article.pk), article.status)
+        return Response(ArticleDetailSerializer(article).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsModeratorOrAdmin])
+    def approve(self, request, pk=None):
+        article = self.get_object()
+        try:
+            article.transition_to("published", request.user, request=request)
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        send_article_status_email.delay(str(article.pk), article.status)
+        return Response(ArticleDetailSerializer(article).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsModeratorOrAdmin])
+    def reject(self, request, pk=None):
+        article = self.get_object()
+        rejection_reason = (request.data.get("rejection_reason") or "").strip()
+        if len(rejection_reason) < 10:
+            return Response({"rejection_reason": "Rejection reason must be at least 10 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            article.transition_to("rejected", request.user, request=request, rejection_reason=rejection_reason)
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        send_article_status_email.delay(str(article.pk), article.status)
+        return Response(ArticleDetailSerializer(article).data)
+
+    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
+    def publish(self, request, pk=None):
+        article = self.get_object()
+        if not _can_direct_publish(request, article):
+            return Response({"detail": "You do not have permission to publish this article directly."}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            article.transition_to("published", request.user, request=request)
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        send_article_status_email.delay(str(article.pk), article.status)
+        return Response(ArticleDetailSerializer(article).data)
+
+    @action(detail=False, methods=["get"], permission_classes=[IsModeratorOrAdmin])
     def pending(self, request):
         qs = Article.objects.filter(status="pending_review").order_by("created_at")
         page = self.paginate_queryset(qs)
@@ -345,7 +460,7 @@ class ArticleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def my_articles(self, request):
-        qs = Article.objects.filter(author_id_id=str(request.user.id)).order_by("-created_at")
+        qs = self.get_queryset().order_by("-created_at")
         page = self.paginate_queryset(qs)
         if page is not None:
             serializer = ArticleListSerializer(page, many=True)
@@ -414,7 +529,7 @@ class ClubViewSet(viewsets.ModelViewSet):
 
         include_inactive = self.request.query_params.get("include_inactive", "").lower() in ("true", "1", "yes")
         user = self.request.user
-        is_moderator = user.is_authenticated and getattr(user, "role", None) == "moderator"
+        is_moderator = moderator_or_admin_permission.has_permission(self.request, self)
         if not is_moderator or not include_inactive:
             qs = qs.filter(is_active=True)
 
@@ -447,7 +562,7 @@ class ClubViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ("list", "retrieve"):
             return [AllowAny()]
-        return [IsModerator()]
+        return [IsModeratorOrAdmin()]
 
 
 class CategoryListView(APIView):
@@ -576,7 +691,9 @@ class ArticleImageUploadView(APIView):
         except Exception as e:
             return Response({"error": f"Save failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        url = request.build_absolute_uri(settings.MEDIA_URL + saved_path)
+        url = default_storage.url(saved_path)
+        if url.startswith("/"):
+            url = request.build_absolute_uri(url)
         return Response({"url": url}, status=status.HTTP_201_CREATED)
 
 
@@ -595,8 +712,7 @@ def _get_article_for_engagement(article_id, request=None):
     if article.status != "published":
         if request is None or not request.user.is_authenticated:
             raise Http404
-        if (str(article.author_id_id) != str(request.user.id) and
-                getattr(request.user, "role", None) != "moderator"):
+        if not author_or_moderator_permission.has_object_permission(request, None, article):
             raise Http404
     return article
 
@@ -676,7 +792,7 @@ class ArticleSuggestionsListView(APIView):
     def get(self, request, article_id):
         article = _get_article_for_engagement(article_id, request)
         is_author = str(article.author_id_id) == str(request.user.id) if article.author_id_id else False
-        is_admin = getattr(request.user, "role", None) in ("admin", "moderator")
+        is_admin = moderator_or_admin_permission.has_permission(request, self)
         if not (is_author or is_admin):
             return Response(status=status.HTTP_403_FORBIDDEN)
         suggestions = ArticleSuggestion.objects.filter(article=article).order_by("-created_at")
@@ -695,7 +811,7 @@ class ArticleSuggestionsListView(APIView):
 
 
 class CampusArticleBreakdownView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [IsModeratorOrAdmin]
 
     def get(self, request):
         qs = (

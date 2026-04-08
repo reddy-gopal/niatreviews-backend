@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('community', '0001_initial'),
+        ('articles', '0001_initial'),
         ('contenttypes', '0002_remove_content_type_name'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('order', models.PositiveIntegerField(db_index=True, default=0)),
                 ('featured_at', models.DateTimeField(auto_now_add=True, db_index=True)),
                 ('featured_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='featured_posts_set', to=settings.AUTH_USER_MODEL)),
-                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='featured_entries', to='community.post')),
+                ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='featured_entries', to='articles.article')),
             ],
             options={
                 'verbose_name': 'Featured post',
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             name='PendingApprovalQueue',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('object_id', models.UUIDField(db_index=True)),
+                ('object_id', models.CharField(db_index=True, max_length=64)),
                 ('status', models.CharField(choices=[('pending', 'Pending'), ('in_review', 'In review'), ('approved', 'Approved'), ('rejected', 'Rejected')], db_index=True, default='pending', max_length=20)),
                 ('resolved_at', models.DateTimeField(blank=True, null=True)),
                 ('notes', models.TextField(blank=True)),

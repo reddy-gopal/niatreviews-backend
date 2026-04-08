@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, FoundingEditorProfile
+
+from .models import FoundingEditorProfile, User
 
 
 @admin.register(FoundingEditorProfile)
@@ -13,18 +14,19 @@ class FoundingEditorProfileAdmin(admin.ModelAdmin):
 class UserAdmin(BaseUserAdmin):
     list_display = (
         "username", "email", "phone_number", "phone_verified",
-        "role", "is_verified_senior", "is_staff", "is_active", "date_joined",
+        "role", "is_verified", "is_verified_senior", "is_staff", "is_active", "date_joined",
     )
-    list_filter = ("role", "is_verified_senior", "phone_verified", "is_staff", "is_active")
+    list_filter = ("role", "is_verified", "is_verified_senior", "phone_verified", "is_staff", "is_active")
     search_fields = ("username", "email", "first_name", "last_name", "phone_number")
     ordering = ("-date_joined",)
     filter_horizontal = ()
+    readonly_fields = ("email_verification_token",)
 
     fieldsets = BaseUserAdmin.fieldsets + (
-        ("NIAT", {"fields": ("role", "is_verified_senior")}),
+        ("NIAT", {"fields": ("role", "is_verified", "is_verified_senior", "email_verification_token")}),
         ("Phone", {"fields": ("phone_number", "phone_verified")}),
     )
     add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ("NIAT", {"fields": ("role", "is_verified_senior")}),
+        ("NIAT", {"fields": ("role", "is_verified", "is_verified_senior")}),
         ("Phone", {"fields": ("phone_number", "phone_verified")}),
     )

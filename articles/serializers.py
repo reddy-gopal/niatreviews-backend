@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework import serializers
-
-from accounts.models import FoundingEditorProfile
+from accounts.models import User
+from profiles.models import VerifiedNiatStudentProfile
 from .models import Article, Category, Club, ClubCampus, GUIDE_TOPIC_CHOICES, STATUS_CHOICES, Subcategory
 
 def _get_category_slugs():
@@ -352,7 +352,7 @@ class ArticleListSerializer(serializers.ModelSerializer):
 
     def get_author_linkedin_profile(self, obj):
         linkedin = (
-            FoundingEditorProfile.objects
+            VerifiedNiatStudentProfile.objects
             .filter(user__username=obj.author_username)
             .values_list("linkedin_profile", flat=True)
             .first()
@@ -457,7 +457,9 @@ class ArticleWriteSerializer(serializers.Serializer):
         is_global = attrs.get("is_global_guide", False)
         campus_id = attrs.get("campus_id")
         request = self.context.get("request")
-        is_founding_editor = request and getattr(request.user, "role", None) == "founding_editor"
+        is_founding_editor = request and getattr(request.user, "role", None) in {
+            User.UserRole.VERIFIED_NIAT_STUDENT,
+        }
 
         if is_global is True:
             if campus_id is not None:

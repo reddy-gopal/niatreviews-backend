@@ -6,13 +6,11 @@ import uuid as uuid_module
 from datetime import timedelta
 
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.utils import timezone
 
+from accounts.models import User
 from .models import MagicLoginToken, SeniorProfile
-
-User = get_user_model()
 
 
 def create_user_and_senior_profile_for_registration(registration):
@@ -37,7 +35,7 @@ def create_user_and_senior_profile_for_registration(registration):
             email=email or None,
             first_name=registration.call_name,
             password=password,
-            role="senior",
+            role=User.UserRole.VERIFIED_NIAT_STUDENT,
         )
         user.set_unusable_password()
         user.save(update_fields=["password"])
